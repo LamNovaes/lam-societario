@@ -379,6 +379,7 @@
 
   /* ---------- Login ---------- */
   .login-screen{
+    flex:1 1 100%;width:100%;
     min-height:100vh;display:flex;align-items:center;justify-content:center;
     background:var(--navy);padding:20px;
   }
@@ -2290,6 +2291,30 @@ let currentUserEmail = '';
 let appStarted = false;
 let pollingStarted = false;
 
+// Traduz o motivo real da falha de login, para a pessoa (e o administrador)
+// saberem o que corrigir, em vez de uma mensagem única para tudo.
+function loginErrorMessage(error){
+  const code = String(error.code || '').toLowerCase();
+  const msg = String(error.message || '').toLowerCase();
+  const status = error.status || 0;
+  if(code === 'email_not_confirmed' || msg.indexOf('email not confirmed') >= 0){
+    return 'O acesso deste e-mail ainda não foi confirmado. Peça ao administrador para confirmar o seu acesso.';
+  }
+  if(code === 'invalid_credentials' || msg.indexOf('invalid login credentials') >= 0){
+    return 'E-mail ou senha incorretos. Confira se digitou o e-mail completo e a senha exatamente como recebeu (atenção a espaços e letras maiúsculas). Se o erro continuar, peça ao administrador para conferir o seu acesso.';
+  }
+  if(status === 429 || code.indexOf('rate_limit') >= 0 || msg.indexOf('rate limit') >= 0){
+    return 'Muitas tentativas seguidas. Aguarde alguns minutos e tente de novo.';
+  }
+  if(code === 'user_banned' || msg.indexOf('banned') >= 0){
+    return 'Este acesso foi bloqueado. Fale com o administrador.';
+  }
+  if(status === 0 || msg.indexOf('failed to fetch') >= 0 || msg.indexOf('network') >= 0 || String(error.name||'').indexOf('Fetch') >= 0){
+    return 'Sem conexão com o servidor. Verifique a sua internet e tente de novo.';
+  }
+  return 'Não foi possível entrar (' + (error.message || 'erro desconhecido') + '). Avise o administrador.';
+}
+
 function renderLoginScreen(prefillError){
   root.innerHTML = '';
   const screen = document.createElement('div');
@@ -2302,7 +2327,7 @@ function renderLoginScreen(prefillError){
       <div class="login-error" id="loginError"></div>
       <div class="field">
         <label>E-mail</label>
-        <input type="email" id="login_email" placeholder="seuusuario@lamcontabil.com.br" autocomplete="username">
+        <input type="email" id="login_email" placeholder="nome@lamconsultoria.net.br" autocomplete="username">
       </div>
       <div class="field">
         <label>Senha</label>
@@ -2319,14 +2344,17 @@ function renderLoginScreen(prefillError){
   if(prefillError) showError(prefillError);
 
   async function doLogin(){
-    const email = screen.querySelector('#login_email').value.trim();
+    const email = screen.querySelector('#login_email').value.trim().toLowerCase();
     const password = screen.querySelector('#login_password').value;
     if(!email || !password){ showError('Preencha e-mail e senha.'); return; }
     const btn = screen.querySelector('#loginBtn');
     btn.disabled = true; btn.textContent = 'Entrando...';
-    const { error } = await sb.auth.signInWithPassword({ email, password });
+    let error = null;
+    try{
+      ({ error } = await sb.auth.signInWithPassword({ email, password }));
+    }catch(e){ error = e; }
     btn.disabled = false; btn.textContent = 'Entrar';
-    if(error){ showError('E-mail ou senha incorretos.'); return; }
+    if(error){ showError(loginErrorMessage(error)); return; }
     // onAuthStateChange cuida de abrir o sistema
   }
   screen.querySelector('#loginBtn').addEventListener('click', doLogin);
