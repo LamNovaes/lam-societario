@@ -1,0 +1,2438 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LAM Societário</title>
+<script src="config.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<style>
+  :root{
+    --navy:#16233d;
+    --navy-2:#1f3358;
+    --slate:#2d4159;
+    --paper:#f6f4ee;
+    --paper-2:#efece2;
+    --ink:#1a1f2b;
+    --muted:#68707f;
+    --line:#dcd6c6;
+    --gold:#b5892b;
+    --gold-soft:#f1e6c8;
+    --green:#3a7d5c;
+    --green-soft:#e3ede7;
+    --red:#a53b3b;
+    --red-soft:#f3e4e2;
+    --amber:#b5892b;
+    --amber-soft:#f1e6c8;
+    --radius:10px;
+    --serif: Georgia, 'Iowan Old Style', 'Palatino Linotype', serif;
+    --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;height:100%;}
+  body{
+    font-family:var(--sans);
+    background:var(--paper);
+    color:var(--ink);
+    -webkit-font-smoothing:antialiased;
+  }
+  #root{display:flex;min-height:100vh;}
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    width:230px;
+    flex:0 0 230px;
+    background:var(--navy);
+    color:#e9ecf3;
+    display:flex;
+    flex-direction:column;
+    padding:22px 16px;
+  }
+  .brand{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:2px;
+  }
+  .brand-logo-card{
+    background:#fbfaf6;
+    border-radius:8px;
+    padding:10px 12px;
+    display:flex;
+    align-items:center;
+  }
+  .brand-logo-card img{
+    display:block;
+    width:100%;
+    height:auto;
+  }
+  .brand small{
+    display:block;
+    font-family:var(--sans);
+    font-size:11px;
+    letter-spacing:1.5px;
+    text-transform:uppercase;
+    color:#93a0bd;
+  }
+  .nav{margin-top:28px;display:flex;flex-direction:column;gap:2px;}
+  .nav-item{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+    padding:9px 10px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:13.5px;
+    color:#c7cfe0;
+    border:1px solid transparent;
+    transition:background .12s ease;
+  }
+  .nav-item:hover{background:rgba(255,255,255,.06);}
+  .nav-item.active{background:rgba(255,255,255,.1);color:#fff;border-color:rgba(255,255,255,.08);}
+  .nav-dot{width:8px;height:8px;border-radius:50%;flex:0 0 8px;}
+  .nav-count{
+    font-family:var(--mono);
+    font-size:11px;
+    color:#8d97ad;
+    background:rgba(255,255,255,.06);
+    padding:1px 6px;
+    border-radius:20px;
+  }
+  .nav-item.active .nav-count{color:#fff;background:rgba(255,255,255,.15);}
+  .nav-sep{height:1px;background:rgba(255,255,255,.1);margin:14px 2px;}
+  .sidebar-foot{margin-top:auto;padding-top:16px;font-size:11px;color:#6d7791;line-height:1.5;}
+
+  /* ---------- Main ---------- */
+  .main{flex:1;min-width:0;display:flex;flex-direction:column;}
+  .topbar{
+    display:flex;align-items:center;gap:14px;
+    padding:20px 30px;
+    border-bottom:1px solid var(--line);
+    background:var(--paper);
+    position:sticky;top:0;z-index:5;
+  }
+  .topbar h1{
+    font-family:var(--serif);
+    font-weight:400;
+    font-size:22px;
+    margin:0;
+    flex:0 0 auto;
+  }
+  .search-wrap{flex:1;max-width:360px;position:relative;}
+  .search-wrap input{
+    width:100%;
+    padding:8px 12px 8px 30px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    font-size:13px;
+    background:#fff;
+    color:var(--ink);
+  }
+  .search-wrap input:focus{outline:2px solid var(--navy-2);outline-offset:1px;}
+  .search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--muted);}
+  .btn{
+    font-family:var(--sans);
+    font-size:13px;
+    font-weight:600;
+    padding:9px 16px;
+    border-radius:8px;
+    border:1px solid transparent;
+    cursor:pointer;
+    display:inline-flex;
+    align-items:center;
+    gap:6px;
+    transition:opacity .12s ease, transform .05s ease;
+  }
+  .btn:active{transform:translateY(1px);}
+  .btn-primary{background:var(--navy);color:#fff;}
+  .btn-primary:hover{opacity:.9;}
+  .btn-ghost{background:transparent;color:var(--navy);border-color:var(--line);}
+  .btn-ghost:hover{background:var(--paper-2);}
+  .btn-danger{background:transparent;color:var(--red);border-color:#e3c9c6;}
+  .btn-danger:hover{background:var(--red-soft);}
+  .btn-sm{padding:6px 11px;font-size:12px;}
+  .spacer{flex:1;}
+
+  .content{padding:24px 30px 60px;flex:1;}
+  .status-toggle{display:flex;gap:6px;margin-bottom:18px;}
+  .chip{
+    font-size:12px;padding:6px 12px;border-radius:20px;
+    border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--muted);
+  }
+  .chip.active{background:var(--navy);color:#fff;border-color:var(--navy);}
+
+  .board{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px;}
+  .empty-state{
+    text-align:center;padding:70px 20px;color:var(--muted);
+    border:1px dashed var(--line);border-radius:12px;
+  }
+  .empty-state .glyph{font-size:28px;margin-bottom:10px;}
+  .empty-state h3{font-family:var(--serif);font-weight:400;color:var(--ink);margin:0 0 6px;}
+
+  /* ---------- Card ---------- */
+  .card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:16px 16px 14px;
+    cursor:pointer;
+    transition:box-shadow .15s ease, transform .1s ease;
+    display:flex;flex-direction:column;gap:10px;
+  }
+  .card:hover{box-shadow:0 6px 18px rgba(22,35,61,.08);transform:translateY(-1px);}
+  .card-top{display:flex;align-items:center;gap:8px;}
+  .badge{
+    font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;
+    padding:3px 9px;border-radius:20px;
+  }
+  .badge-abertura{background:var(--green-soft);color:var(--green);}
+  .badge-alteracao{background:var(--amber-soft);color:var(--amber);}
+  .badge-encerramento{background:var(--red-soft);color:var(--red);}
+  .badge-status{margin-left:auto;font-size:10.5px;color:var(--muted);background:var(--paper-2);text-transform:none;font-weight:600;}
+  .card-client{font-family:var(--serif);font-size:17px;line-height:1.3;}
+  .card-meta{font-size:12px;color:var(--muted);display:flex;gap:10px;flex-wrap:wrap;}
+  .card-meta span.cnpj{font-family:var(--mono);}
+  .card-value{font-family:var(--mono);font-size:14px;color:var(--gold);font-weight:600;}
+
+  .tracker{display:flex;align-items:center;margin:2px 0 0;}
+  .tracker-dot{
+    width:9px;height:9px;border-radius:50%;background:var(--line);
+    border:2px solid var(--line);flex:0 0 auto;
+  }
+  .tracker-dot.done{background:var(--navy-2);border-color:var(--navy-2);}
+  .tracker-dot.current{background:#fff;border-color:var(--gold);width:11px;height:11px;box-shadow:0 0 0 3px var(--gold-soft);}
+  .tracker-line{flex:1;height:2px;background:var(--line);}
+  .tracker-line.done{background:var(--navy-2);}
+  .card-stage-label{font-size:12px;color:var(--slate);}
+  .card-foot{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);border-top:1px solid var(--paper-2);padding-top:9px;}
+
+  /* ---------- Dashboard ---------- */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px;margin-bottom:22px;}
+  .stat-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;}
+  .stat-card .stat-label{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin-bottom:8px;}
+  .stat-card .stat-value{font-family:var(--serif);font-size:26px;color:var(--ink);}
+  .stat-card .stat-value.gold{color:var(--gold);font-family:var(--mono);font-size:21px;}
+  .charts-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;}
+  .chart-card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;}
+  .chart-card h3{font-family:var(--serif);font-weight:400;font-size:16px;margin:0 0 4px;}
+  .chart-card .sub{font-size:12px;color:var(--muted);margin-bottom:16px;}
+  .donut-wrap{display:flex;align-items:center;gap:22px;flex-wrap:wrap;}
+  .donut{
+    width:150px;height:150px;border-radius:50%;flex:0 0 150px;
+    display:flex;align-items:center;justify-content:center;position:relative;
+  }
+  .donut-hole{
+    width:92px;height:92px;border-radius:50%;background:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+  }
+  .donut-hole .n{font-family:var(--serif);font-size:22px;color:var(--ink);line-height:1;}
+  .donut-hole .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.3px;color:var(--muted);margin-top:3px;}
+  .legend{display:flex;flex-direction:column;gap:9px;flex:1;min-width:140px;}
+  .legend-row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);}
+  .legend-swatch{width:10px;height:10px;border-radius:3px;flex:0 0 10px;}
+  .legend-row .legend-pct{margin-left:auto;font-family:var(--mono);color:var(--muted);font-size:11.5px;}
+  .chart-empty{color:var(--muted);font-size:13px;padding:20px 0;}
+
+  /* ---------- Deadlines / Agenda ---------- */
+  .deadline-badge{font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:20px;white-space:nowrap;}
+  .deadline-badge.overdue{background:var(--red-soft);color:var(--red);}
+  .deadline-badge.today{background:var(--amber-soft);color:var(--amber);}
+  .deadline-badge.soon{background:var(--amber-soft);color:var(--amber);}
+  .deadline-badge.ok{background:var(--green-soft);color:var(--green);}
+  .agenda-row{display:flex;align-items:center;gap:12px;padding:12px 14px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;}
+  .agenda-row:hover{box-shadow:0 4px 12px rgba(22,35,61,.06);}
+  .agenda-row .agenda-main{flex:1;min-width:0;}
+  .agenda-row .agenda-title{font-size:13.5px;color:var(--ink);font-weight:600;}
+  .agenda-row .agenda-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+  .agenda-section-title{font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);font-weight:700;margin:18px 0 8px;}
+  .agenda-section-title:first-child{margin-top:0;}
+
+  /* ---------- Timeline ---------- */
+  .timeline-item{display:flex;gap:10px;padding:8px 2px;font-size:12.5px;}
+  .timeline-item .t-date{flex:0 0 108px;color:var(--muted);font-family:var(--mono);font-size:11px;padding-top:1px;}
+  .timeline-item .t-text{flex:1;color:var(--ink);}
+  .timeline-empty{font-size:12px;color:var(--muted);padding:4px 0;}
+
+  /* ---------- Tarefas ---------- */
+  .task-row{display:flex;align-items:center;gap:12px;padding:11px 14px;background:#fff;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;}
+  .task-row.done{opacity:.55;}
+  .task-check{
+    width:20px;height:20px;border-radius:50%;border:2px solid var(--line);flex:0 0 20px;
+    cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;
+  }
+  .task-check.checked{background:var(--green);border-color:var(--green);}
+  .task-main{flex:1;min-width:0;}
+  .task-title{font-size:13.5px;color:var(--ink);font-weight:600;}
+  .task-row.done .task-title{text-decoration:line-through;color:var(--muted);}
+  .task-sub{font-size:12px;color:var(--muted);margin-top:2px;}
+
+  /* ---------- Kanban ---------- */
+  .kanban-tabs{display:flex;gap:6px;margin-bottom:16px;}
+  .kanban-board{display:flex;gap:14px;overflow-x:auto;padding-bottom:10px;align-items:flex-start;}
+  .kanban-col{
+    flex:0 0 260px;background:var(--paper-2);border-radius:10px;padding:10px;
+    min-height:120px;
+  }
+  .kanban-col.dragover{background:var(--gold-soft);}
+  .kanban-col-title{font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;font-weight:700;color:var(--slate);padding:4px 6px 10px;display:flex;justify-content:space-between;}
+  .kanban-card{
+    background:#fff;border:1px solid var(--line);border-radius:8px;padding:10px 11px;margin-bottom:8px;
+    cursor:grab;font-size:12.5px;
+  }
+  .kanban-card:active{cursor:grabbing;}
+  .kanban-card .kc-client{font-weight:600;color:var(--ink);margin-bottom:3px;}
+  .kanban-card .kc-sub{color:var(--muted);font-size:11.5px;}
+
+  /* ---------- Drawer ---------- */
+  .overlay{
+    position:fixed;inset:0;background:rgba(22,25,35,.35);
+    display:none;align-items:stretch;justify-content:flex-end;z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .drawer{
+    width:460px;max-width:92vw;background:var(--paper);height:100%;
+    overflow-y:auto;box-shadow:-8px 0 30px rgba(0,0,0,.15);
+    padding:26px 26px 40px;
+    animation:slidein .18s ease;
+  }
+  @keyframes slidein{from{transform:translateX(24px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+  .drawer-head{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:18px;}
+  .drawer-title{font-family:var(--serif);font-size:20px;}
+  .drawer-close{background:none;border:none;font-size:20px;color:var(--muted);cursor:pointer;line-height:1;padding:2px 6px;}
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:var(--muted);margin-bottom:5px;}
+  .field input, .field select, .field textarea{
+    width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:7px;
+    font-size:13.5px;font-family:var(--sans);background:#fff;color:var(--ink);
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--navy-2);outline-offset:1px;}
+  .field textarea{resize:vertical;min-height:60px;}
+  .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .hint{font-size:11px;color:var(--muted);margin-top:4px;}
+
+  .stage-list{margin-top:8px;display:flex;flex-direction:column;}
+  .stage-row{
+    display:flex;align-items:center;gap:10px;padding:9px 4px;cursor:pointer;
+    border-radius:7px;
+  }
+  .stage-row:hover{background:var(--paper-2);}
+  .stage-num{
+    width:22px;height:22px;border-radius:50%;flex:0 0 22px;
+    display:flex;align-items:center;justify-content:center;
+    font-size:10.5px;font-family:var(--mono);font-weight:700;
+    border:2px solid var(--line);color:var(--muted);background:#fff;
+  }
+  .stage-row.done .stage-num{background:var(--navy-2);border-color:var(--navy-2);color:#fff;}
+  .stage-row.current .stage-num{border-color:var(--gold);color:var(--gold);background:var(--gold-soft);}
+  .stage-connector{width:2px;height:14px;background:var(--line);margin-left:10px;}
+  .stage-connector.done{background:var(--navy-2);}
+  .stage-text{font-size:13.5px;color:var(--ink);}
+  .stage-row.done .stage-text{color:var(--muted);text-decoration:line-through;text-decoration-color:var(--line);}
+  .stage-row.current .stage-text{font-weight:600;}
+
+  .drawer-actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap;}
+  .status-pill{
+    display:inline-block;font-size:11px;padding:3px 10px;border-radius:20px;font-weight:600;margin-bottom:16px;
+  }
+  .status-pill.em_andamento{background:var(--amber-soft);color:var(--amber);}
+  .status-pill.concluido{background:var(--green-soft);color:var(--green);}
+  .status-pill.cancelado{background:var(--red-soft);color:var(--red);}
+
+  /* ---------- Settings ---------- */
+  .settings-block{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:20px 22px;margin-bottom:18px;}
+  .settings-block h3{font-family:var(--serif);font-weight:400;font-size:16px;margin:0 0 4px;}
+  .settings-block .sub{font-size:12px;color:var(--muted);margin-bottom:14px;}
+  .price-row{display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--paper-2);}
+  .price-row:last-child{border-bottom:none;}
+  .price-row .badge{width:130px;flex:0 0 130px;text-align:center;}
+  .price-row input{width:150px;font-family:var(--mono);}
+  .stage-edit-list{display:flex;flex-direction:column;gap:6px;margin-top:10px;}
+  .stage-edit-row{display:flex;align-items:center;gap:6px;}
+  .stage-edit-row input{flex:1;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;}
+  .icon-btn{
+    background:none;border:1px solid var(--line);border-radius:6px;width:26px;height:26px;
+    display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:12px;flex:0 0 26px;
+  }
+  .icon-btn:hover{background:var(--paper-2);}
+  .add-stage-row{display:flex;gap:6px;margin-top:10px;}
+  .add-stage-row input{flex:1;font-size:13px;padding:7px 9px;border:1px solid var(--line);border-radius:6px;}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+    background:var(--navy);color:#fff;padding:10px 18px;border-radius:8px;
+    font-size:13px;box-shadow:0 6px 20px rgba(0,0,0,.2);z-index:100;
+    opacity:0;pointer-events:none;transition:opacity .2s ease, bottom .2s ease;
+  }
+  .toast.show{opacity:1;bottom:30px;}
+
+  @media (max-width:760px){
+    .sidebar{width:74px;flex:0 0 74px;padding:16px 8px;}
+    .brand small,.nav-item span.label,.sidebar-foot{display:none;}
+    .nav-item{justify-content:center;}
+    .nav-count{display:none;}
+    .topbar{padding:16px;flex-wrap:wrap;}
+    .content{padding:16px;}
+    .drawer{width:100vw;}
+  }
+
+  /* ---------- Login ---------- */
+  .login-screen{
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
+    background:var(--navy);padding:20px;
+  }
+  .login-card{
+    background:#fff;border-radius:12px;padding:34px 32px;width:100%;max-width:360px;
+    box-shadow:0 20px 50px rgba(0,0,0,.3);
+  }
+  .login-card .brand-logo-card{background:var(--paper);margin-bottom:22px;}
+  .login-card h2{font-family:var(--serif);font-weight:400;font-size:19px;margin:0 0 4px;}
+  .login-card .sub{font-size:12.5px;color:var(--muted);margin-bottom:20px;}
+  .login-error{background:var(--red-soft);color:var(--red);font-size:12.5px;padding:9px 11px;border-radius:7px;margin-bottom:14px;display:none;}
+  .login-error.show{display:block;}
+  .login-link{font-size:12.5px;color:var(--navy-2);cursor:pointer;text-decoration:underline;background:none;border:none;padding:0;margin-top:10px;}
+  .config-missing{
+    background:var(--amber-soft);color:var(--amber);font-size:12px;padding:10px 12px;border-radius:8px;margin-bottom:16px;line-height:1.5;
+  }
+  .account-row{display:flex;align-items:center;gap:8px;font-size:11.5px;color:#aab3c8;margin-top:10px;}
+  .account-row button{background:none;border:none;color:#aab3c8;text-decoration:underline;cursor:pointer;font-size:11.5px;padding:0;}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script>
+const LOGO_DATA_URI = 'data:image/png;base64,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';
+
+// ---------------------------------------------------------------
+// CONFIGURAÇÃO DO SUPABASE
+// A URL do projeto e a chave pública do Supabase ficam no arquivo
+// config.js (ao lado deste), preenchido uma única vez conforme o guia
+// de instalação. Essas duas informações são feitas para ficar visíveis
+// no site: a proteção de verdade vem das regras de segurança (RLS) e do
+// cadastro fechado, configurados dentro do Supabase.
+// ---------------------------------------------------------------
+const _cfg = window.LAM_CONFIG || {};
+const SUPABASE_URL = (_cfg.SUPABASE_URL || 'COLE_AQUI_A_PROJECT_URL').trim();
+const SUPABASE_ANON_KEY = (_cfg.SUPABASE_ANON_KEY || 'COLE_AQUI_A_CHAVE_ANON_PUBLIC').trim();
+const SUPABASE_CONFIGURED = !SUPABASE_URL.startsWith('COLE_AQUI') && !SUPABASE_ANON_KEY.startsWith('COLE_AQUI');
+
+// Os links de convite e de "esqueci minha senha" chegam aqui com um código
+// no endereço (depois do #). O Supabase apaga esse código assim que lê,
+// então guardamos uma cópia antes de criar o cliente, para saber que a
+// pessoa acabou de chegar por um desses links e precisa definir a senha.
+const INITIAL_HASH = window.location.hash || '';
+let NEEDS_PASSWORD_SETUP = /type=(invite|recovery)/.test(INITIAL_HASH);
+const LOGIN_NOTICE = /error_code=otp_expired|error=access_denied/.test(INITIAL_HASH)
+  ? 'O link que você abriu expirou ou já foi usado. Clique em "Esqueci minha senha" para receber um novo, ou peça um novo convite ao administrador.'
+  : '';
+let currentUserId = '';
+
+let sb = null;
+if(SUPABASE_CONFIGURED && window.supabase){
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+}
+
+// window.storage é um adaptador fino sobre uma única tabela do Supabase
+// (app_data: key text, value text). Dados "compartilhados" ficam com a
+// chave original (todo mundo que logar enxerga). Dados "pessoais" (como o
+// último nome digitado em "Cadastrado por") recebem o id da pessoa na
+// frente da chave, para um usuário não sobrescrever o do outro.
+if(sb){
+  const scoped = (key, shared) => shared ? key : ('u:' + currentUserId + ':' + key);
+  window.storage = {
+    async get(key, shared){
+      const { data, error } = await sb.from('app_data').select('value').eq('key', scoped(key, shared)).maybeSingle();
+      if(error) throw error;
+      if(!data) throw new Error('key not found: ' + key);
+      return { key, value: data.value, shared: !!shared };
+    },
+    async set(key, value, shared){
+      const { error } = await sb.from('app_data').upsert({ key: scoped(key, shared), value, updated_at: new Date().toISOString() });
+      if(error) throw error;
+      return { key, value, shared: !!shared };
+    },
+    async delete(key, shared){
+      const { error } = await sb.from('app_data').delete().eq('key', scoped(key, shared));
+      if(error) throw error;
+      return { key, deleted: true, shared: !!shared };
+    },
+    async list(prefix, shared){
+      let q = sb.from('app_data').select('key');
+      q = q.like('key', scoped(prefix || '', shared) + '%');
+      const { data, error } = await q;
+      if(error) throw error;
+      return { keys: (data||[]).map(r=>r.key), prefix, shared: !!shared };
+    },
+    // Lê todas as linhas com certo prefixo (já com o conteúdo), de mil em
+    // mil, porque o Supabase devolve no máximo 1000 linhas por consulta.
+    async listWithValues(prefix){
+      const step = 1000;
+      let from = 0, all = [];
+      while(true){
+        const { data, error } = await sb.from('app_data').select('key,value')
+          .like('key', prefix + '%').order('key').range(from, from + step - 1);
+        if(error) throw error;
+        all = all.concat(data || []);
+        if(!data || data.length < step) break;
+        from += step;
+      }
+      return all;
+    }
+  };
+} else if(!window.storage){
+  // Modo local de emergência: só é usado se o Supabase ainda não foi
+  // configurado acima. Sem login, sem compartilhamento entre pessoas —
+  // existe apenas para o site não ficar totalmente quebrado enquanto
+  // você ainda não colou a URL/chave do Supabase.
+  window.storage = {
+    async get(key, shared){
+      const raw = localStorage.getItem('lam_' + key);
+      if(raw === null){ throw new Error('key not found: ' + key); }
+      return { key, value: raw, shared: !!shared };
+    },
+    async set(key, value, shared){
+      localStorage.setItem('lam_' + key, value);
+      return { key, value, shared: !!shared };
+    },
+    async delete(key, shared){
+      const existed = localStorage.getItem('lam_' + key) !== null;
+      localStorage.removeItem('lam_' + key);
+      return { key, deleted: existed, shared: !!shared };
+    },
+    async list(prefix, shared){
+      const p = 'lam_' + (prefix || '');
+      const keys = Object.keys(localStorage)
+        .filter(k => k.startsWith(p))
+        .map(k => k.slice(4));
+      return { keys, prefix, shared: !!shared };
+    },
+    async listWithValues(prefix){
+      const p = 'lam_' + (prefix || '');
+      return Object.keys(localStorage)
+        .filter(k => k.startsWith(p))
+        .map(k => ({ key: k.slice(4), value: localStorage.getItem(k) }));
+    }
+  };
+}
+
+const STORE_SETTINGS = 'settings';
+const STORE_PROCESSES = 'processes';
+const STORE_TASKS = 'tasks';
+
+const DEFAULT_STAGES = {
+  abertura: [
+    'Coleta de documentos e dados dos sócios',
+    'Consulta de viabilidade (nome, endereço e atividade)',
+    'Elaboração do contrato social / requerimento',
+    'Assinatura dos sócios',
+    'Registro na Junta Comercial',
+    'Emissão do CNPJ na Receita Federal',
+    'Inscrição Estadual (se aplicável)',
+    'Inscrição Municipal / Alvará',
+    'Cadastros complementares (FGTS, eSocial etc.)',
+    'Entrega da documentação ao cliente'
+  ],
+  alteracao: [
+    'Levantamento do motivo da alteração',
+    'Coleta de documentos e dados atualizados',
+    'Elaboração da alteração contratual',
+    'Assinatura dos sócios',
+    'Registro na Junta Comercial',
+    'Atualização de dados na Receita Federal',
+    'Atualização de Inscrição Estadual/Municipal',
+    'Entrega da documentação ao cliente'
+  ],
+  encerramento: [
+    'Levantamento de pendências fiscais e contábeis',
+    'Elaboração do distrato social',
+    'Assinatura dos sócios',
+    'Baixa na Junta Comercial',
+    'Baixa do CNPJ na Receita Federal',
+    'Baixa de Inscrição Estadual',
+    'Baixa de Inscrição Municipal / Alvará',
+    'Entrega de certidões e documentação final'
+  ]
+};
+
+const DEFAULT_PRICES = { abertura: 1250, alteracao: 1250, encerramento: 1500 };
+
+const TYPE_LABELS = { abertura: 'Abertura', alteracao: 'Alteração', encerramento: 'Encerramento' };
+const TYPE_LABELS_FULL = { abertura: 'Abertura de empresa', alteracao: 'Alteração de contrato social', encerramento: 'Encerramento de empresa' };
+
+let state = {
+  settings: { prices: {...DEFAULT_PRICES}, stages: JSON.parse(JSON.stringify(DEFAULT_STAGES)) },
+  processes: [],
+  tasks: [],
+  view: 'dashboard',    // dashboard | todos | abertura | alteracao | encerramento | concluidos | agenda | kanban | tarefas | config
+  statusFilter: 'em_andamento', // em_andamento | concluido | cancelado | all
+  search: '',
+  drawerMode: null,     // 'new' | 'detail' | 'newTask' | 'task' | 'changePassword'
+  drawerProcessId: null,
+  drawerType: null,
+  drawerTaskId: null,
+  kanbanType: 'abertura',
+  taskFilter: 'todas', // todas | hoje | atrasadas | proximas
+  lastRegisteredBy: ''
+};
+
+function daysAgoISO(days){
+  const d = new Date();
+  d.setDate(d.getDate()-days);
+  return d.toISOString();
+}
+
+function sampleProcesses(){
+  return [
+    {
+      id: uid(),
+      type: 'abertura',
+      client: 'Padaria Bom Sabor Ltda',
+      cnpj: '',
+      responsible: 'Fernanda Lima',
+      registeredBy: 'Juliana Costa',
+      value: 1250,
+      honorarioMensal: 350,
+      notes: 'Cliente indicado pelo contador Marcos. Aguardando definição do endereço fiscal.',
+      status: 'em_andamento',
+      currentStage: 3,
+      nextAction: 'Conferir assinatura dos sócios no contrato social',
+      documents: [
+        { id: uid(), nome: 'RG/CPF dos sócios', tipo: 'Documento pessoal', status: 'Recebido' },
+        { id: uid(), nome: 'Comprovante de endereço', tipo: 'Documento pessoal', status: 'Pendente' }
+      ],
+      history: [
+        { date: daysAgoISO(9), text: 'Processo criado.' },
+        { date: daysAgoISO(7), text: 'Documentos dos sócios recebidos.' },
+        { date: daysAgoISO(4), text: 'Contrato social elaborado.' }
+      ],
+      createdAt: daysAgoISO(9),
+      completedAt: null
+    },
+    {
+      id: uid(),
+      type: 'alteracao',
+      client: 'Tech Solutions Consultoria em TI Ltda',
+      cnpj: '12.345.678/0001-90',
+      responsible: 'Rodrigo Alves',
+      registeredBy: 'Juliana Costa',
+      value: 1250,
+      notes: 'Inclusão de novo sócio e alteração do capital social.',
+      status: 'em_andamento',
+      currentStage: 5,
+      nextAction: 'Consultar resultado do protocolo na Junta Comercial',
+      documents: [],
+      history: [
+        { date: daysAgoISO(5), text: 'Processo criado.' },
+        { date: daysAgoISO(2), text: 'Alteração contratual protocolada na Junta Comercial.' }
+      ],
+      createdAt: daysAgoISO(5),
+      completedAt: null
+    },
+    {
+      id: uid(),
+      type: 'encerramento',
+      client: 'Comércio de Peças Automotivas Silva & Cia',
+      cnpj: '98.765.432/0001-11',
+      responsible: 'Fernanda Lima',
+      registeredBy: 'Marcos Pereira',
+      value: 1500,
+      notes: 'Empresa inativa desde 2024. Sem pendências fiscais identificadas.',
+      status: 'concluido',
+      currentStage: 7,
+      nextAction: '',
+      documents: [],
+      history: [
+        { date: daysAgoISO(21), text: 'Processo criado.' },
+        { date: daysAgoISO(2), text: 'Processo concluído.' }
+      ],
+      createdAt: daysAgoISO(21),
+      completedAt: daysAgoISO(2)
+    }
+  ];
+}
+
+function sampleTasks(processes){
+  const [p1, p2] = processes;
+  return [
+    { id: uid(), title: 'Conferir assinatura do contrato social', processId: p1.id, responsible: 'Fernanda Lima', dueDate: daysAgoISO(2).slice(0,10), status: 'a_fazer', createdAt: daysAgoISO(4) },
+    { id: uid(), title: 'Solicitar comprovante de endereço ao cliente', processId: p1.id, responsible: 'Juliana Costa', dueDate: daysAgoISO(0).slice(0,10), status: 'a_fazer', createdAt: daysAgoISO(1) },
+    { id: uid(), title: 'Consultar protocolo na Junta Comercial', processId: p2.id, responsible: 'Rodrigo Alves', dueDate: daysAgoISO(-3).slice(0,10), status: 'a_fazer', createdAt: daysAgoISO(1) },
+    { id: uid(), title: 'Organizar pasta de documentos do mês', processId: null, responsible: 'Marcos Pereira', dueDate: daysAgoISO(-7).slice(0,10), status: 'a_fazer', createdAt: daysAgoISO(1) }
+  ];
+}
+
+const root = document.getElementById('root');
+
+function uid(){ return 'p_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+function fmtBRL(n){
+  n = Number(n)||0;
+  return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('pt-BR');
+}
+function daysBetween(iso, endIso){
+  const start = new Date(iso);
+  const end = endIso ? new Date(endIso) : new Date();
+  return Math.max(0, Math.round((end-start)/86400000));
+}
+
+function deadlineStatus(dateStr){
+  if(!dateStr) return null;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const target = new Date(dateStr + 'T00:00:00');
+  const days = Math.round((target - today) / 86400000);
+  if(days < 0) return { cls:'overdue', label:`Atrasado há ${Math.abs(days)}d`, days };
+  if(days === 0) return { cls:'today', label:'Vence hoje', days };
+  if(days <= 3) return { cls:'soon', label:`Vence em ${days}d`, days };
+  return { cls:'ok', label:`Vence em ${days}d`, days };
+}
+
+function addHistory(p, text){
+  if(!p.history) p.history = [];
+  p.history.push({ date: new Date().toISOString(), text });
+}
+
+// ---------------- storage ----------------
+// Cada processo e cada tarefa vive numa linha própria do banco
+// (process:<id> e task:<id>). Ao salvar, só o que realmente mudou é
+// enviado. Assim, se duas pessoas mexem em processos diferentes ao mesmo
+// tempo, uma não apaga o trabalho da outra. (Se as duas mexem no MESMO
+// processo ao mesmo tempo, vale a última gravação.)
+const COLLECTIONS = {
+  processes: { prefix: 'process:', stateKey: 'processes' },
+  tasks:     { prefix: 'task:',    stateKey: 'tasks' }
+};
+const lastSaved = { processes: new Map(), tasks: new Map() }; // id -> JSON como está no servidor
+let lastSettingsJson = '';
+let pendingSaves = 0;
+
+async function fetchRows(prefix){
+  if(window.storage.listWithValues) return await window.storage.listWithValues(prefix);
+  const { keys } = await window.storage.list(prefix, true);
+  const rows = [];
+  for(const k of keys){
+    try{ const r = await window.storage.get(k, true); rows.push({ key: k, value: r.value }); }catch(e){}
+  }
+  return rows;
+}
+
+async function loadCollection(name){
+  const rows = await fetchRows(COLLECTIONS[name].prefix);
+  const arr = [], map = new Map();
+  rows.forEach(r=>{
+    try{
+      const item = JSON.parse(r.value);
+      if(item && item.id){ arr.push(item); map.set(item.id, JSON.stringify(item)); }
+    }catch(e){ /* linha inválida: ignora */ }
+  });
+  return { arr, map };
+}
+
+function sameMap(a, b){
+  if(a.size !== b.size) return false;
+  for(const [k, v] of a){ if(b.get(k) !== v) return false; }
+  return true;
+}
+
+async function saveCollection(name){
+  const { prefix, stateKey } = COLLECTIONS[name];
+  const last = lastSaved[name];
+  const seen = new Set();
+  const jobs = [];
+  state[stateKey].forEach(item=>{
+    seen.add(item.id);
+    const json = JSON.stringify(item);
+    if(last.get(item.id) !== json){
+      jobs.push(window.storage.set(prefix + item.id, json, true).then(()=>{ last.set(item.id, json); }));
+    }
+  });
+  Array.from(last.keys()).forEach(id=>{
+    if(!seen.has(id)){
+      jobs.push(window.storage.delete(prefix + id, true).then(()=>{ last.delete(id); }));
+    }
+  });
+  if(jobs.length === 0) return;
+  pendingSaves++;
+  try{ await Promise.all(jobs); }
+  catch(e){ showToast('Não foi possível salvar agora. Verifique a conexão e tente de novo.'); }
+  finally{ pendingSaves--; }
+}
+async function saveProcesses(){ return saveCollection('processes'); }
+async function saveTasks(){ return saveCollection('tasks'); }
+
+async function saveSettings(){
+  try{
+    const json = JSON.stringify(state.settings);
+    await window.storage.set(STORE_SETTINGS, json, true);
+    lastSettingsJson = json;
+  }catch(e){ showToast('Erro ao salvar configurações.'); }
+}
+
+async function loadSettingsJson(){
+  try{
+    const s = await window.storage.get(STORE_SETTINGS, true);
+    return (s && s.value) ? s.value : null;
+  }catch(e){
+    if(String(e && e.message).indexOf('key not found') === 0) return null;
+    throw e;
+  }
+}
+
+function renderLoadError(){
+  root.innerHTML = `
+    <div class="login-screen"><div class="login-card">
+      <h2>Não foi possível carregar os dados</h2>
+      <div class="sub">Verifique sua conexão com a internet e tente de novo.</div>
+      <button class="btn btn-primary" id="retryLoadBtn" style="width:100%;justify-content:center;">Tentar novamente</button>
+      <button class="login-link" id="retrySignOutBtn">Sair</button>
+    </div></div>`;
+  root.querySelector('#retryLoadBtn').addEventListener('click', ()=> loadState());
+  root.querySelector('#retrySignOutBtn').addEventListener('click', signOut);
+}
+
+async function loadState(){
+  try{
+    const last = await window.storage.get('lastRegisteredBy', false);
+    if(last && last.value) state.lastRegisteredBy = last.value;
+  }catch(e){ /* ainda não existe */ }
+
+  let procs, tasks, settingsJson;
+  try{
+    settingsJson = await loadSettingsJson();
+    procs = await loadCollection('processes');
+    tasks = await loadCollection('tasks');
+  }catch(e){
+    // Falhou ao ler do servidor: NÃO seguimos (nem criamos exemplos), para
+    // nunca confundir "sem conexão" com "ainda não há dados".
+    renderLoadError();
+    return false;
+  }
+
+  if(settingsJson){
+    try{ state.settings = JSON.parse(settingsJson); }catch(e){}
+  }
+  lastSettingsJson = JSON.stringify(state.settings);
+  state.processes = procs.arr; lastSaved.processes = procs.map;
+  state.tasks = tasks.arr;     lastSaved.tasks = tasks.map;
+
+  if(state.processes.length === 0){
+    let seeded = false;
+    try{
+      const flag = await window.storage.get('seeded', true);
+      seeded = !!(flag && flag.value);
+    }catch(e){ seeded = false; }
+    if(!seeded){
+      state.processes = sampleProcesses();
+      await saveProcesses();
+      state.tasks = sampleTasks(state.processes);
+      await saveTasks();
+      try{ await window.storage.set('seeded', 'true', true); }catch(e){}
+    }
+  }
+  render();
+  return true;
+}
+
+// Busca em segundo plano o que os colegas alteraram e atualiza a tela.
+// Não mexe em nada enquanto há um painel aberto, um campo sendo digitado
+// ou uma gravação em andamento, para nunca atrapalhar quem está editando.
+async function refreshFromServer(){
+  if(SUPABASE_CONFIGURED && !appStarted) return;
+  if(pendingSaves > 0 || state.drawerMode) return;
+  const ae = document.activeElement;
+  if(ae && /^(INPUT|TEXTAREA|SELECT)$/.test(ae.tagName)) return;
+  try{
+    const [procs, tasks, settingsJson] = await Promise.all([
+      loadCollection('processes'), loadCollection('tasks'), loadSettingsJson()
+    ]);
+    if(pendingSaves > 0 || state.drawerMode) return;
+    let changed = false;
+    if(!sameMap(procs.map, lastSaved.processes)){ state.processes = procs.arr; lastSaved.processes = procs.map; changed = true; }
+    if(!sameMap(tasks.map, lastSaved.tasks)){ state.tasks = tasks.arr; lastSaved.tasks = tasks.map; changed = true; }
+    if(settingsJson){
+      try{
+        const parsed = JSON.parse(settingsJson);
+        const normalized = JSON.stringify(parsed);
+        if(normalized !== lastSettingsJson){ state.settings = parsed; lastSettingsJson = normalized; changed = true; }
+      }catch(e){}
+    }
+    if(changed) render();
+  }catch(e){ /* sem conexão agora: tenta de novo no próximo ciclo */ }
+}
+
+// Antes de abrir um processo/tarefa para edição, traz a versão mais
+// recente dele (outra pessoa pode ter mexido há pouco).
+async function refreshItem(name, id){
+  if(pendingSaves > 0) return true;
+  const { prefix, stateKey } = COLLECTIONS[name];
+  try{
+    const r = await Promise.race([
+      window.storage.get(prefix + id, true),
+      new Promise((_, rej)=> setTimeout(()=> rej(new Error('timeout')), 2500))
+    ]);
+    const item = JSON.parse(r.value);
+    const json = JSON.stringify(item);
+    const idx = state[stateKey].findIndex(x=>x.id===id);
+    if(idx >= 0){
+      if(JSON.stringify(state[stateKey][idx]) !== json) state[stateKey][idx] = item;
+    } else {
+      state[stateKey].push(item);
+    }
+    lastSaved[name].set(id, json);
+    return true;
+  }catch(e){
+    if(String(e && e.message).indexOf('key not found') === 0){
+      state[stateKey] = state[stateKey].filter(x=>x.id!==id);
+      lastSaved[name].delete(id);
+      showToast('Este item foi removido por outra pessoa.');
+      return false;
+    }
+    return true; // sem conexão: usa a cópia local
+  }
+}
+
+// ---------------- toast ----------------
+let toastTimer;
+function showToast(msg){
+  let t = document.querySelector('.toast');
+  if(!t){ t = document.createElement('div'); t.className='toast'; document.body.appendChild(t); }
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=>t.classList.remove('show'), 2200);
+}
+
+// ---------------- render ----------------
+function render(){
+  root.innerHTML = '';
+  root.appendChild(renderSidebar());
+  root.appendChild(renderMain());
+  if(state.drawerMode) root.appendChild(renderDrawer());
+}
+
+function counts(){
+  const c = {todos:0, abertura:0, alteracao:0, encerramento:0, concluidos:0};
+  state.processes.forEach(p=>{
+    if(p.status==='em_andamento'){ c.todos++; c[p.type]++; }
+    if(p.status==='concluido'){ c.concluidos++; }
+  });
+  return c;
+}
+
+function agendaItems(){
+  const items = [];
+  state.processes.forEach(p=>{
+    if(p.status!=='em_andamento') return;
+    if(p.deadline){
+      const ds = deadlineStatus(p.deadline);
+      if(ds) items.push({ kind:'processo', label: p.client, sub: TYPE_LABELS_FULL[p.type], date: p.deadline, ds, processId: p.id });
+    }
+    (p.protocols||[]).forEach(item=>{
+      if(item.resolvido || !item.prazo) return;
+      const ds = deadlineStatus(item.prazo);
+      if(ds) items.push({ kind: item.tipo, label: `${item.orgao}${item.numero ? ' — '+item.numero : ''}`, sub: p.client, date: item.prazo, ds, processId: p.id });
+    });
+  });
+  return items.sort((a,b)=> new Date(a.date) - new Date(b.date));
+}
+function agendaUrgentCount(){
+  return agendaItems().filter(i=> i.ds.cls==='overdue' || i.ds.cls==='today' || i.ds.cls==='soon').length;
+}
+
+function renderSidebar(){
+  const el = document.createElement('div');
+  el.className = 'sidebar';
+  const c = counts();
+
+  el.innerHTML = `
+    <div class="brand">
+      <div class="brand-logo-card"><img src="${LOGO_DATA_URI}" alt="LAM Consultoria Contábil Empresarial"></div>
+      <small>Departamento societário</small>
+    </div>
+    <div class="nav">
+      ${navItem('dashboard','#e9ecf3','Dashboard', null)}
+      ${navItem('agenda','#d16b6b','Agenda', agendaUrgentCount())}
+      ${navItem('kanban','#8fb2e0','Kanban', null)}
+      ${navItem('tarefas','#d4ac4a','Tarefas', openTasksCount())}
+      <div class="nav-sep"></div>
+      ${navItem('todos','#8d97ad','Todos os processos', c.todos)}
+      ${navItem('abertura','#4fae82','Abertura', c.abertura)}
+      ${navItem('alteracao','#d4ac4a','Alteração', c.alteracao)}
+      ${navItem('encerramento','#d16b6b','Encerramento', c.encerramento)}
+      <div class="nav-sep"></div>
+      ${navItem('concluidos','#4fae82','Concluídos', c.concluidos)}
+      <div class="nav-sep"></div>
+      ${navItem('config','#8d97ad','Configurações', null)}
+    </div>
+    <div class="sidebar-foot">
+      ${SUPABASE_CONFIGURED ? 'Dados compartilhados com a equipe.' : '<span style="color:#d4ac4a;">Modo local: sem login e sem compartilhar dados. Configure o Supabase.</span>'}
+      ${SUPABASE_CONFIGURED ? `
+      <div class="account-row">
+        <span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(currentUserEmail)}</span>
+      </div>
+      <div class="account-row">
+        <button id="changePasswordLink">Trocar senha</button>
+        <span>·</span>
+        <button id="signOutLink">Sair</button>
+      </div>
+      ` : ''}
+    </div>
+  `;
+
+  el.querySelectorAll('[data-nav]').forEach(node=>{
+    node.addEventListener('click', ()=>{ state.view = node.getAttribute('data-nav'); render(); });
+  });
+  const changePasswordLink = el.querySelector('#changePasswordLink');
+  if(changePasswordLink) changePasswordLink.addEventListener('click', openChangePassword);
+  const signOutLink = el.querySelector('#signOutLink');
+  if(signOutLink) signOutLink.addEventListener('click', signOut);
+  return el;
+}
+
+function navItem(key, color, label, count){
+  const active = state.view===key ? 'active' : '';
+  const countHtml = count===null ? '' : `<span class="nav-count">${count}</span>`;
+  return `<div class="nav-item ${active}" data-nav="${key}">
+    <span style="display:flex;align-items:center;gap:9px;">
+      <span class="nav-dot" style="background:${color}"></span>
+      <span class="label">${label}</span>
+    </span>
+    ${countHtml}
+  </div>`;
+}
+
+function renderMain(){
+  const el = document.createElement('div');
+  el.className = 'main';
+
+  if(state.view === 'config'){
+    el.appendChild(renderTopbar('Configurações', false));
+    el.appendChild(renderSettingsContent());
+    return el;
+  }
+
+  if(state.view === 'dashboard'){
+    el.appendChild(renderTopbar('Dashboard', false));
+    el.appendChild(renderDashboardContent());
+    return el;
+  }
+
+  if(state.view === 'concluidos'){
+    el.appendChild(renderTopbar('Processos concluídos', true, false));
+    el.appendChild(renderArchiveContent());
+    return el;
+  }
+
+  if(state.view === 'agenda'){
+    el.appendChild(renderTopbar('Agenda de prazos', false));
+    el.appendChild(renderAgendaContent());
+    return el;
+  }
+
+  if(state.view === 'kanban'){
+    el.appendChild(renderTopbar('Kanban', false));
+    el.appendChild(renderKanbanContent());
+    return el;
+  }
+
+  if(state.view === 'tarefas'){
+    el.appendChild(renderTopbar('Tarefas', true, true, {
+      buttonLabel: '+ Nova tarefa',
+      onButtonClick: openNewTask,
+      searchPlaceholder: 'Buscar por título ou responsável...',
+      onSearchInput: e=>{ state.search = e.target.value; renderTasksListOnly(); }
+    }));
+    el.appendChild(renderTasksContent());
+    return el;
+  }
+
+  const titles = {todos:'Todos os processos', abertura:'Abertura de empresa', alteracao:'Alteração de contrato social', encerramento:'Encerramento de empresa'};
+  el.appendChild(renderTopbar(titles[state.view], true));
+  el.appendChild(renderBoardContent());
+  return el;
+}
+
+function renderTopbar(title, showControls, showNewButton, opts){
+  if(showNewButton === undefined) showNewButton = true;
+  opts = opts || {};
+  const buttonLabel = opts.buttonLabel || '+ Novo processo';
+  const onButtonClick = opts.onButtonClick || openNewProcess;
+  const searchPlaceholder = opts.searchPlaceholder || 'Buscar por cliente ou CNPJ...';
+  const onSearchInput = opts.onSearchInput || (e=>{ state.search = e.target.value; renderBoardOnly(); });
+  const el = document.createElement('div');
+  el.className = 'topbar';
+  el.innerHTML = `
+    <h1>${title}</h1>
+    ${showControls ? `
+    <div class="search-wrap">
+      <span class="search-icon">⌕</span>
+      <input type="text" id="searchInput" placeholder="${escapeHtml(searchPlaceholder)}" value="${escapeHtml(state.search)}">
+    </div>
+    <div class="spacer"></div>
+    ${showNewButton ? `<button class="btn btn-primary" id="newProcessBtn">${escapeHtml(buttonLabel)}</button>` : ''}
+    ` : `<div class="spacer"></div>`}
+  `;
+  if(showControls){
+    el.querySelector('#searchInput').addEventListener('input', onSearchInput);
+    if(showNewButton) el.querySelector('#newProcessBtn').addEventListener('click', onButtonClick);
+  }
+  return el;
+}
+
+function renderBoardContent(){
+  const wrap = document.createElement('div');
+  wrap.className = 'content';
+  wrap.id = 'boardContent';
+  wrap.appendChild(renderStatusToggle());
+  wrap.appendChild(renderBoard());
+  return wrap;
+}
+
+function renderArchiveContent(){
+  const wrap = document.createElement('div');
+  wrap.className = 'content';
+  wrap.id = 'boardContent';
+  const note = document.createElement('div');
+  note.className = 'hint';
+  note.style.marginBottom = '14px';
+  note.textContent = 'Todos os processos já concluídos, de qualquer tipo, ficam arquivados aqui automaticamente.';
+  wrap.appendChild(note);
+  wrap.appendChild(renderBoard());
+  return wrap;
+}
+
+function renderBoardOnly(){
+  const wrap = document.getElementById('boardContent');
+  if(!wrap) return;
+  wrap.innerHTML='';
+  if(state.view === 'concluidos'){
+    const note = document.createElement('div');
+    note.className = 'hint';
+    note.style.marginBottom = '14px';
+    note.textContent = 'Todos os processos já concluídos, de qualquer tipo, ficam arquivados aqui automaticamente.';
+    wrap.appendChild(note);
+  } else {
+    wrap.appendChild(renderStatusToggle());
+  }
+  wrap.appendChild(renderBoard());
+}
+
+function renderStatusToggle(){
+  const el = document.createElement('div');
+  el.className = 'status-toggle';
+  const opts = [['em_andamento','Em andamento'],['concluido','Concluídos'],['cancelado','Cancelados'],['all','Todos os status']];
+  opts.forEach(([key,label])=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (state.statusFilter===key ? ' active':'');
+    chip.textContent = label;
+    chip.addEventListener('click', ()=>{ state.statusFilter = key; renderBoardOnly(); });
+    el.appendChild(chip);
+  });
+  return el;
+}
+
+function filteredProcesses(){
+  const list = state.processes.filter(p=>{
+    if(state.view==='concluidos'){
+      if(p.status!=='concluido') return false;
+    } else {
+      if(state.view!=='todos' && p.type!==state.view) return false;
+      if(state.statusFilter!=='all' && p.status!==state.statusFilter) return false;
+    }
+    if(state.search){
+      const s = state.search.toLowerCase();
+      if(!(p.client.toLowerCase().includes(s) || (p.cnpj||'').toLowerCase().includes(s))) return false;
+    }
+    return true;
+  });
+  if(state.view==='concluidos'){
+    return list.sort((a,b)=> new Date(b.completedAt||b.createdAt) - new Date(a.completedAt||a.createdAt));
+  }
+  return list.sort((a,b)=> new Date(b.createdAt) - new Date(a.createdAt));
+}
+
+function renderBoard(){
+  const list = filteredProcesses();
+  const board = document.createElement('div');
+  if(list.length===0){
+    board.className='';
+    const msg = state.view==='concluidos'
+      ? 'Quando um processo for concluído, ele aparece automaticamente aqui.'
+      : 'Crie um novo processo para começar a acompanhar o andamento.';
+    board.innerHTML = `<div class="empty-state">
+      <div class="glyph">📋</div>
+      <h3>Nenhum processo por aqui</h3>
+      <div>${msg}</div>
+    </div>`;
+    return board;
+  }
+  board.className = 'board';
+  list.forEach(p=> board.appendChild(renderCard(p)));
+  return board;
+}
+
+function stageArrFor(p){
+  return state.settings.stages[p.type] || [];
+}
+
+function renderCard(p){
+  const stages = stageArrFor(p);
+  const card = document.createElement('div');
+  card.className = 'card';
+  const statusLabel = {em_andamento:'Em andamento', concluido:'Concluído', cancelado:'Cancelado'}[p.status];
+  const currentLabel = p.status==='concluido' ? 'Processo concluído' : (p.status==='cancelado' ? 'Processo cancelado' : (stages[p.currentStage] || ''));
+
+  card.innerHTML = `
+    <div class="card-top">
+      <span class="badge badge-${p.type}">${TYPE_LABELS[p.type]}</span>
+      <span class="badge badge-status">${statusLabel}</span>
+      ${p.status==='em_andamento' && deadlineStatus(p.deadline) ? `<span class="deadline-badge ${deadlineStatus(p.deadline).cls}" style="margin-left:6px;">${deadlineStatus(p.deadline).label}</span>` : ''}
+    </div>
+    <div class="card-client">${escapeHtml(p.client)}</div>
+    <div class="card-meta">
+      ${p.cnpj ? `<span class="cnpj">${escapeHtml(p.cnpj)}</span>` : ''}
+      ${p.responsible ? `<span>Resp.: ${escapeHtml(p.responsible)}</span>` : ''}
+      ${p.registeredBy ? `<span>Cadastrado por: ${escapeHtml(p.registeredBy)}</span>` : ''}
+    </div>
+    <div class="card-value">${fmtBRL(p.value)}${p.type==='abertura' && p.honorarioMensal ? ` <span style="font-size:11px;color:var(--muted);font-weight:400;">+ ${fmtBRL(p.honorarioMensal)}/mês (honorário)</span>` : ''}</div>
+    <div class="tracker">${trackerHtml(stages, p)}</div>
+    <div class="card-stage-label">${escapeHtml(currentLabel)}</div>
+    ${p.nextAction ? `<div class="card-stage-label" style="color:var(--gold);font-weight:600;">→ ${escapeHtml(p.nextAction)}</div>` : ''}
+    <div class="card-foot">
+      <span>${p.completedAt ? 'Concluído em ' + fmtDate(p.completedAt) : 'Aberto em ' + fmtDate(p.createdAt)}</span>
+      <span>${daysBetween(p.createdAt, p.completedAt)} dia(s)</span>
+    </div>
+  `;
+  card.addEventListener('click', ()=> openDetail(p.id));
+  return card;
+}
+
+function trackerHtml(stages, p){
+  let html = '';
+  const total = stages.length;
+  const cur = p.status==='concluido' ? total : p.currentStage;
+  for(let i=0;i<total;i++){
+    let cls = '';
+    if(i<cur) cls='done';
+    else if(i===cur && p.status==='em_andamento') cls='current';
+    html += `<div class="tracker-dot ${cls}"></div>`;
+    if(i<total-1) html += `<div class="tracker-line ${i<cur?'done':''}"></div>`;
+  }
+  return html;
+}
+
+function escapeHtml(str){
+  return (str||'').replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+}
+
+// ---------------- Dashboard ----------------
+function renderDashboardContent(){
+  const wrap = document.createElement('div');
+  wrap.className = 'content';
+
+  const emAndamento = state.processes.filter(p=>p.status==='em_andamento');
+  const concluidos = state.processes.filter(p=>p.status==='concluido');
+  const cancelados = state.processes.filter(p=>p.status==='cancelado');
+  const valorAndamento = emAndamento.reduce((s,p)=>s+p.value,0);
+  const valorConcluido = concluidos.reduce((s,p)=>s+p.value,0);
+  const ticketMedio = concluidos.length ? valorConcluido/concluidos.length : 0;
+
+  const stats = document.createElement('div');
+  stats.className = 'stat-grid';
+  stats.innerHTML = `
+    ${statCard('Processos em andamento', emAndamento.length)}
+    ${statCard('Concluídos', concluidos.length)}
+    ${statCard('Valor em andamento', fmtBRL(valorAndamento), true)}
+    ${statCard('Valor faturado (concluídos)', fmtBRL(valorConcluido), true)}
+    ${statCard('Ticket médio (concluídos)', fmtBRL(ticketMedio), true)}
+  `;
+  wrap.appendChild(stats);
+
+  const chartsRow = document.createElement('div');
+  chartsRow.className = 'charts-row';
+
+  const typeData = [
+    {label:TYPE_LABELS.abertura, value: emAndamento.filter(p=>p.type==='abertura').length, color:'#3a7d5c'},
+    {label:TYPE_LABELS.alteracao, value: emAndamento.filter(p=>p.type==='alteracao').length, color:'#b5892b'},
+    {label:TYPE_LABELS.encerramento, value: emAndamento.filter(p=>p.type==='encerramento').length, color:'#a53b3b'}
+  ];
+  chartsRow.appendChild(chartCard('Processos ativos por tipo', 'Distribuição do que está em andamento agora', typeData, emAndamento.length, 'ativos'));
+
+  const statusData = [
+    {label:'Em andamento', value: emAndamento.length, color:'#b5892b'},
+    {label:'Concluídos', value: concluidos.length, color:'#3a7d5c'},
+    {label:'Cancelados', value: cancelados.length, color:'#a53b3b'}
+  ];
+  chartsRow.appendChild(chartCard('Todos os processos por status', 'Panorama geral desde o início', statusData, state.processes.length, 'processos'));
+
+  const typeAllData = [
+    {label:TYPE_LABELS.abertura, value: state.processes.filter(p=>p.type==='abertura').length, color:'#3a7d5c'},
+    {label:TYPE_LABELS.alteracao, value: state.processes.filter(p=>p.type==='alteracao').length, color:'#b5892b'},
+    {label:TYPE_LABELS.encerramento, value: state.processes.filter(p=>p.type==='encerramento').length, color:'#a53b3b'}
+  ];
+  chartsRow.appendChild(chartCard('Total histórico por tipo', 'Todos os processos já criados', typeAllData, state.processes.length, 'processos'));
+
+  wrap.appendChild(chartsRow);
+  return wrap;
+}
+
+function statCard(label, value, isMoney){
+  return `<div class="stat-card">
+    <div class="stat-label">${label}</div>
+    <div class="stat-value ${isMoney?'gold':''}">${value}</div>
+  </div>`;
+}
+
+function chartCard(title, sub, data, total, unitLabel){
+  const card = document.createElement('div');
+  card.className = 'chart-card';
+  const head = document.createElement('div');
+  head.innerHTML = `<h3>${title}</h3><div class="sub">${sub}</div>`;
+  card.appendChild(head);
+  card.appendChild(donutChart(data, total, unitLabel));
+  return card;
+}
+
+function donutChart(data, total, unitLabel){
+  const wrap = document.createElement('div');
+  if(!total){
+    wrap.className = 'chart-empty';
+    wrap.textContent = 'Sem dados suficientes ainda.';
+    return wrap;
+  }
+  wrap.className = 'donut-wrap';
+
+  let gradient = [];
+  let acc = 0;
+  data.forEach(seg=>{
+    if(seg.value<=0) return;
+    const start = (acc/total)*100;
+    acc += seg.value;
+    const end = (acc/total)*100;
+    gradient.push(`${seg.color} ${start}% ${end}%`);
+  });
+  const donut = document.createElement('div');
+  donut.className = 'donut';
+  donut.style.background = gradient.length ? `conic-gradient(${gradient.join(',')})` : 'var(--paper-2)';
+  donut.innerHTML = `<div class="donut-hole"><div class="n">${total}</div><div class="l">${unitLabel}</div></div>`;
+  wrap.appendChild(donut);
+
+  const legend = document.createElement('div');
+  legend.className = 'legend';
+  data.forEach(seg=>{
+    if(seg.value<=0) return;
+    const pct = ((seg.value/total)*100).toFixed(1);
+    const row = document.createElement('div');
+    row.className = 'legend-row';
+    row.innerHTML = `<span class="legend-swatch" style="background:${seg.color}"></span><span>${seg.label}</span><span class="legend-pct">${seg.value} · ${pct}%</span>`;
+    legend.appendChild(row);
+  });
+  wrap.appendChild(legend);
+  return wrap;
+}
+
+function openNewProcess(){
+  state.drawerMode = 'new';
+  state.drawerType = (state.view!=='todos' && state.view!=='config' && state.view!=='dashboard' && state.view!=='agenda' && state.view!=='concluidos' && state.view!=='kanban' && state.view!=='tarefas') ? state.view : 'abertura';
+  render();
+}
+async function openDetail(id){
+  const ok = await refreshItem('processes', id);
+  if(!ok || !state.processes.find(p=>p.id===id)){ render(); return; }
+  state.drawerMode = 'detail';
+  state.drawerProcessId = id;
+  render();
+}
+function openNewTask(){
+  state.drawerMode = 'newTask';
+  render();
+}
+async function openTaskDetail(id){
+  const ok = await refreshItem('tasks', id);
+  if(!ok || !state.tasks.find(t=>t.id===id)){ render(); return; }
+  state.drawerMode = 'task';
+  state.drawerTaskId = id;
+  render();
+}
+function closeDrawer(){
+  state.drawerMode = null;
+  state.drawerProcessId = null;
+  state.drawerTaskId = null;
+  render();
+}
+
+function renderDrawer(){
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay open';
+  overlay.addEventListener('click', e=>{ if(e.target===overlay) closeDrawer(); });
+
+  const drawer = document.createElement('div');
+  drawer.className = 'drawer';
+  overlay.appendChild(drawer);
+
+  if(state.drawerMode==='new'){
+    drawer.appendChild(renderNewForm());
+  } else if(state.drawerMode==='changePassword'){
+    drawer.appendChild(renderChangePasswordForm());
+  } else if(state.drawerMode==='newTask'){
+    drawer.appendChild(renderNewTaskForm());
+  } else if(state.drawerMode==='task'){
+    const t = state.tasks.find(x=>x.id===state.drawerTaskId);
+    if(!t){ closeDrawer(); return overlay; }
+    drawer.appendChild(renderTaskDetailForm(t));
+  } else {
+    const p = state.processes.find(x=>x.id===state.drawerProcessId);
+    if(!p){ closeDrawer(); return overlay; }
+    drawer.appendChild(renderDetailForm(p));
+  }
+  return overlay;
+}
+
+function renderNewForm(){
+  const wrap = document.createElement('div');
+  const type = state.drawerType;
+
+  wrap.innerHTML = `
+    <div class="drawer-head">
+      <div class="drawer-title">Novo processo</div>
+      <button class="drawer-close" id="closeDrawerBtn">✕</button>
+    </div>
+    <div class="field">
+      <label>Tipo de processo</label>
+      <select id="f_type">
+        <option value="abertura" ${type==='abertura'?'selected':''}>Abertura de empresa</option>
+        <option value="alteracao" ${type==='alteracao'?'selected':''}>Alteração de contrato social</option>
+        <option value="encerramento" ${type==='encerramento'?'selected':''}>Encerramento de empresa</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Cliente / Razão social</label>
+      <input type="text" id="f_client" placeholder="Ex: Padaria Bom Sabor Ltda">
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>CNPJ (se houver)</label>
+        <input type="text" id="f_cnpj" placeholder="00.000.000/0000-00">
+      </div>
+      <div class="field">
+        <label>Responsável pelo processo</label>
+        <input type="text" id="f_responsible" placeholder="Nome do responsável">
+      </div>
+    </div>
+    <div class="field">
+      <label>Cadastrado por</label>
+      <input type="text" id="f_registeredBy" placeholder="Seu nome" value="${escapeHtml(state.lastRegisteredBy||'')}">
+      <div class="hint">Quem está lançando essas informações no sistema.</div>
+    </div>
+    <div class="field">
+      <label>Valor do serviço (R$)</label>
+      <input type="number" min="0" step="0.01" id="f_value" value="${state.settings.prices[type]}">
+      <div class="hint">Sugerido pela tabela de valores — ajuste se necessário.</div>
+    </div>
+    <div class="field" id="f_honorario_field" style="display:${type==='abertura' ? 'block':'none'}">
+      <label>Valor do honorário mensal (R$)</label>
+      <input type="number" min="0" step="0.01" id="f_honorario" placeholder="Ex: 350,00">
+      <div class="hint">Honorário contábil mensal combinado com o cliente na abertura da empresa.</div>
+    </div>
+    <div class="field">
+      <label>Observações</label>
+      <textarea id="f_notes" placeholder="Notas internas sobre o processo..."></textarea>
+    </div>
+    <div class="drawer-actions">
+      <button class="btn btn-primary" id="createBtn">Criar processo</button>
+      <button class="btn btn-ghost" id="cancelCreateBtn">Cancelar</button>
+    </div>
+  `;
+
+  wrap.querySelector('#closeDrawerBtn').addEventListener('click', closeDrawer);
+  wrap.querySelector('#cancelCreateBtn').addEventListener('click', closeDrawer);
+  wrap.querySelector('#f_type').addEventListener('change', e=>{
+    wrap.querySelector('#f_value').value = state.settings.prices[e.target.value];
+    wrap.querySelector('#f_honorario_field').style.display = e.target.value==='abertura' ? 'block' : 'none';
+  });
+  wrap.querySelector('#createBtn').addEventListener('click', ()=>{
+    const client = wrap.querySelector('#f_client').value.trim();
+    if(!client){ showToast('Informe o nome do cliente.'); return; }
+    const newType = wrap.querySelector('#f_type').value;
+    const registeredBy = wrap.querySelector('#f_registeredBy').value.trim();
+    const p = {
+      id: uid(),
+      type: newType,
+      client,
+      cnpj: wrap.querySelector('#f_cnpj').value.trim(),
+      responsible: wrap.querySelector('#f_responsible').value.trim(),
+      registeredBy,
+      value: parseFloat(wrap.querySelector('#f_value').value)||0,
+      honorarioMensal: newType==='abertura' ? (parseFloat(wrap.querySelector('#f_honorario').value)||0) : 0,
+      notes: wrap.querySelector('#f_notes').value.trim(),
+      status: 'em_andamento',
+      currentStage: 0,
+      nextAction: '',
+      documents: [],
+      history: [],
+      createdAt: new Date().toISOString(),
+      completedAt: null
+    };
+    addHistory(p, 'Processo criado.');
+    state.processes.push(p);
+    saveProcesses();
+    if(registeredBy){
+      state.lastRegisteredBy = registeredBy;
+      try{ window.storage.set('lastRegisteredBy', registeredBy, false); }catch(e){}
+    }
+    showToast('Processo criado.');
+    state.drawerMode='detail'; state.drawerProcessId=p.id;
+    render();
+  });
+
+  return wrap;
+}
+
+function renderDetailForm(p){
+  const wrap = document.createElement('div');
+  const stages = stageArrFor(p);
+  const statusLabel = {em_andamento:'Em andamento', concluido:'Concluído', cancelado:'Cancelado'}[p.status];
+
+  wrap.innerHTML = `
+    <div class="drawer-head">
+      <div>
+        <span class="badge badge-${p.type}">${TYPE_LABELS[p.type]}</span>
+        <div class="drawer-title">${escapeHtml(p.client)}</div>
+      </div>
+      <button class="drawer-close" id="closeDrawerBtn">✕</button>
+    </div>
+    <div class="status-pill ${p.status}">${statusLabel}</div>
+
+    <div class="row2">
+      <div class="field">
+        <label>Cliente / Razão social</label>
+        <input type="text" id="d_client" value="${escapeHtml(p.client)}">
+      </div>
+      <div class="field">
+        <label>CNPJ</label>
+        <input type="text" id="d_cnpj" value="${escapeHtml(p.cnpj||'')}">
+      </div>
+    </div>
+    <div class="field">
+      <label>Próxima ação</label>
+      <input type="text" id="d_nextAction" value="${escapeHtml(p.nextAction||'')}" placeholder="Ex: Consultar protocolo na Junta Comercial">
+      <div class="hint">O que precisa ser feito agora neste processo — some de vista rápida nos cards e no Kanban.</div>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Responsável pelo processo</label>
+        <input type="text" id="d_responsible" value="${escapeHtml(p.responsible||'')}">
+      </div>
+      <div class="field">
+        <label>Valor do serviço (R$)</label>
+        <input type="number" min="0" step="0.01" id="d_value" value="${p.value}">
+      </div>
+    </div>
+    <div class="field">
+      <label>Prazo do processo</label>
+      <input type="date" id="d_deadline" value="${p.deadline||''}">
+      <div class="hint">Aparece na Agenda com alerta conforme se aproxima do vencimento.</div>
+    </div>
+    <div class="field">
+      <label>Cadastrado por</label>
+      <input type="text" id="d_registeredBy" value="${escapeHtml(p.registeredBy||'')}" placeholder="Quem lançou este processo">
+    </div>
+    ${p.type==='abertura' ? `
+    <div class="field">
+      <label>Valor do honorário mensal (R$)</label>
+      <input type="number" min="0" step="0.01" id="d_honorario" value="${p.honorarioMensal||0}">
+      <div class="hint">Honorário contábil mensal combinado com o cliente na abertura da empresa.</div>
+    </div>
+    ` : ''}
+    <div class="field">
+      <label>Observações</label>
+      <textarea id="d_notes">${escapeHtml(p.notes||'')}</textarea>
+    </div>
+
+    <div class="field">
+      <label>Protocolos e exigências</label>
+      <div class="stage-edit-list" id="protocolsList"></div>
+      <div class="add-stage-row" style="flex-wrap:wrap;gap:6px;">
+        <select id="np_tipo" style="flex:0 0 100px;padding:7px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <option value="protocolo">Protocolo</option>
+          <option value="exigencia">Exigência</option>
+        </select>
+        <select id="np_orgao" style="flex:0 0 130px;padding:7px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <option>Junta Comercial</option>
+          <option>Receita Federal</option>
+          <option>Prefeitura</option>
+          <option>Secretaria da Fazenda</option>
+          <option>Outro</option>
+        </select>
+        <input type="text" id="np_numero" placeholder="Número / descrição" style="flex:1;min-width:100px;">
+        <input type="date" id="np_prazo" title="Prazo de resposta" style="flex:0 0 140px;">
+        <button class="icon-btn" id="addProtocolBtn">+</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Documentos</label>
+      <div class="hint" style="margin-bottom:8px;">Controle de recebimento — anexar o arquivo em si ainda depende de conectar um serviço de armazenamento.</div>
+      <div class="stage-edit-list" id="documentsList"></div>
+      <div class="add-stage-row" style="flex-wrap:wrap;gap:6px;">
+        <input type="text" id="nd_nome" placeholder="Nome do documento" style="flex:1;min-width:120px;">
+        <select id="nd_status" style="flex:0 0 120px;padding:7px 6px;border:1px solid var(--line);border-radius:6px;font-size:12px;">
+          <option value="Pendente">Pendente</option>
+          <option value="Recebido">Recebido</option>
+          <option value="Em conferência">Em conferência</option>
+          <option value="Aprovado">Aprovado</option>
+        </select>
+        <button class="icon-btn" id="addDocumentBtn">+</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Etapas do processo</label>
+      <div class="stage-list" id="stageList"></div>
+    </div>
+
+    <div class="field">
+      <label>Linha do tempo</label>
+      <div id="timelineList"></div>
+    </div>
+
+    <div class="drawer-actions">
+      <button class="btn btn-primary" id="saveBtn">Salvar alterações</button>
+      ${p.status==='em_andamento' ? `<button class="btn btn-ghost" id="cancelProcBtn">Cancelar processo</button>` : ''}
+      ${p.status==='concluido' || p.status==='cancelado' ? `<button class="btn btn-ghost" id="reopenBtn">Reabrir processo</button>` : ''}
+      <button class="btn btn-danger" id="deleteBtn">Excluir</button>
+    </div>
+  `;
+
+  const protocolsListEl = wrap.querySelector('#protocolsList');
+  function renderProtocolsList(){
+    protocolsListEl.innerHTML = '';
+    const items = p.protocols || [];
+    if(items.length===0){
+      protocolsListEl.innerHTML = `<div class="hint">Nenhum protocolo ou exigência registrado ainda.</div>`;
+      return;
+    }
+    items.slice().sort((a,b)=> new Date(a.prazo||'2999-12-31') - new Date(b.prazo||'2999-12-31')).forEach(item=>{
+      const ds = item.resolvido ? null : deadlineStatus(item.prazo);
+      const row = document.createElement('div');
+      row.className = 'stage-edit-row';
+      row.innerHTML = `
+        <span style="flex:0 0 76px;font-size:11px;font-weight:700;color:${item.tipo==='exigencia'?'var(--red)':'var(--slate)'};text-transform:uppercase;${item.resolvido?'opacity:.5;':''}">${item.tipo==='exigencia'?'Exigência':'Protocolo'}</span>
+        <span style="flex:1;font-size:12.5px;${item.resolvido?'color:var(--muted);text-decoration:line-through;':''}">${escapeHtml(item.orgao)} ${item.numero ? '— '+escapeHtml(item.numero) : ''}</span>
+        ${item.resolvido ? `<span class="deadline-badge ok">Resolvido</span>` : (ds ? `<span class="deadline-badge ${ds.cls}">${ds.label}</span>` : '')}
+        <button class="icon-btn" data-toggleresolved="${item.id}" title="${item.resolvido ? 'Reabrir' : 'Marcar como resolvido'}">${item.resolvido ? '↺' : '✓'}</button>
+        <button class="icon-btn" data-delprotocol="${item.id}">✕</button>
+      `;
+      protocolsListEl.appendChild(row);
+    });
+    protocolsListEl.querySelectorAll('[data-toggleresolved]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const item = (p.protocols||[]).find(x=>x.id===btn.getAttribute('data-toggleresolved'));
+        if(item){ item.resolvido = !item.resolvido; saveProcesses(); renderProtocolsList(); }
+      });
+    });
+    protocolsListEl.querySelectorAll('[data-delprotocol]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        p.protocols = (p.protocols||[]).filter(x=>x.id!==btn.getAttribute('data-delprotocol'));
+        saveProcesses();
+        renderProtocolsList();
+      });
+    });
+  }
+  renderProtocolsList();
+  wrap.querySelector('#addProtocolBtn').addEventListener('click', ()=>{
+    const numero = wrap.querySelector('#np_numero').value.trim();
+    const prazo = wrap.querySelector('#np_prazo').value;
+    const tipo = wrap.querySelector('#np_tipo').value;
+    const orgao = wrap.querySelector('#np_orgao').value;
+    p.protocols = p.protocols || [];
+    p.protocols.push({
+      id: uid(),
+      tipo,
+      orgao,
+      numero,
+      prazo,
+      status: 'aberto'
+    });
+    addHistory(p, `${tipo==='exigencia' ? 'Exigência registrada' : 'Protocolo registrado'}: ${orgao}${numero ? ' — '+numero : ''}.`);
+    saveProcesses();
+    wrap.querySelector('#np_numero').value = '';
+    wrap.querySelector('#np_prazo').value = '';
+    renderProtocolsList();
+  });
+
+  const documentsListEl = wrap.querySelector('#documentsList');
+  function renderDocumentsList(){
+    documentsListEl.innerHTML = '';
+    const docs = p.documents || [];
+    if(docs.length===0){
+      documentsListEl.innerHTML = `<div class="hint">Nenhum documento registrado ainda.</div>`;
+      return;
+    }
+    docs.forEach(doc=>{
+      const row = document.createElement('div');
+      row.className = 'stage-edit-row';
+      const statusColor = doc.status==='Aprovado' ? 'var(--green)' : (doc.status==='Pendente' ? 'var(--red)' : 'var(--amber)');
+      row.innerHTML = `
+        <span style="flex:1;font-size:12.5px;">${escapeHtml(doc.nome)}</span>
+        <span class="deadline-badge" style="background:transparent;border:1px solid ${statusColor};color:${statusColor};">${escapeHtml(doc.status)}</span>
+        <button class="icon-btn" data-deldoc="${doc.id}">✕</button>
+      `;
+      documentsListEl.appendChild(row);
+    });
+    documentsListEl.querySelectorAll('[data-deldoc]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        p.documents = (p.documents||[]).filter(x=>x.id!==btn.getAttribute('data-deldoc'));
+        saveProcesses();
+        renderDocumentsList();
+      });
+    });
+  }
+  renderDocumentsList();
+  wrap.querySelector('#addDocumentBtn').addEventListener('click', ()=>{
+    const nome = wrap.querySelector('#nd_nome').value.trim();
+    if(!nome){ showToast('Informe o nome do documento.'); return; }
+    const status = wrap.querySelector('#nd_status').value;
+    p.documents = p.documents || [];
+    p.documents.push({ id: uid(), nome, tipo: '', status });
+    addHistory(p, `Documento "${nome}" registrado como ${status.toLowerCase()}.`);
+    saveProcesses();
+    wrap.querySelector('#nd_nome').value = '';
+    renderDocumentsList();
+  });
+
+  const timelineListEl = wrap.querySelector('#timelineList');
+  const history = (p.history || []).slice().sort((a,b)=> new Date(b.date) - new Date(a.date));
+  if(history.length===0){
+    timelineListEl.innerHTML = `<div class="timeline-empty">Nenhum evento registrado ainda.</div>`;
+  } else {
+    timelineListEl.innerHTML = history.map(h=>`
+      <div class="timeline-item">
+        <span class="t-date">${fmtDate(h.date)}</span>
+        <span class="t-text">${escapeHtml(h.text)}</span>
+      </div>
+    `).join('');
+  }
+
+  const stageListEl = wrap.querySelector('#stageList');
+  stages.forEach((s, idx)=>{
+    const row = document.createElement('div');
+    let cls = '';
+    if(p.status==='concluido' || idx < p.currentStage) cls = 'done';
+    else if(idx === p.currentStage && p.status==='em_andamento') cls = 'current';
+    row.className = 'stage-row ' + cls;
+    row.innerHTML = `<span class="stage-num">${cls==='done' ? '✓' : idx+1}</span><span class="stage-text">${escapeHtml(s)}</span>`;
+    if(p.status==='em_andamento'){
+      row.addEventListener('click', ()=>{
+        p.currentStage = idx;
+        saveProcesses();
+        render();
+      });
+    }
+    stageListEl.appendChild(row);
+    if(idx<stages.length-1){
+      const conn = document.createElement('div');
+      conn.className = 'stage-connector' + (idx<p.currentStage || p.status==='concluido' ? ' done':'');
+      conn.style.marginLeft = '15px';
+      stageListEl.appendChild(conn);
+    }
+  });
+
+  if(p.status==='em_andamento'){
+    const advanceRow = document.createElement('div');
+    advanceRow.style.marginTop = '10px';
+    const isLast = p.currentStage >= stages.length-1;
+    advanceRow.innerHTML = `<button class="btn btn-primary btn-sm" id="advanceBtn">${isLast ? 'Concluir processo' : 'Avançar para próxima etapa →'}</button>`;
+    wrap.querySelector('.field:has(#stageList)') ? null : null;
+    wrap.insertBefore(advanceRow, wrap.querySelector('.drawer-actions'));
+    advanceRow.querySelector('#advanceBtn').addEventListener('click', ()=>{
+      if(isLast){
+        p.status='concluido';
+        p.completedAt = new Date().toISOString();
+        addHistory(p, 'Processo concluído.');
+        showToast('Processo concluído.');
+      } else {
+        p.currentStage += 1;
+        addHistory(p, `Etapa avançada para "${stages[p.currentStage]}".`);
+        showToast('Etapa avançada.');
+      }
+      saveProcesses();
+      render();
+    });
+  }
+
+  wrap.querySelector('#closeDrawerBtn').addEventListener('click', closeDrawer);
+  wrap.querySelector('#saveBtn').addEventListener('click', ()=>{
+    p.client = wrap.querySelector('#d_client').value.trim() || p.client;
+    p.cnpj = wrap.querySelector('#d_cnpj').value.trim();
+    p.responsible = wrap.querySelector('#d_responsible').value.trim();
+    p.registeredBy = wrap.querySelector('#d_registeredBy').value.trim();
+    p.value = parseFloat(wrap.querySelector('#d_value').value)||0;
+    p.deadline = wrap.querySelector('#d_deadline').value || null;
+    const honorarioInput = wrap.querySelector('#d_honorario');
+    if(honorarioInput) p.honorarioMensal = parseFloat(honorarioInput.value)||0;
+    p.notes = wrap.querySelector('#d_notes').value.trim();
+    const newNextAction = wrap.querySelector('#d_nextAction').value.trim();
+    if(newNextAction !== (p.nextAction||'')){
+      p.nextAction = newNextAction;
+      if(newNextAction) addHistory(p, `Próxima ação definida: ${newNextAction}`);
+    }
+    saveProcesses();
+    showToast('Alterações salvas.');
+    render();
+  });
+  const cancelBtn = wrap.querySelector('#cancelProcBtn');
+  if(cancelBtn) cancelBtn.addEventListener('click', ()=>{
+    if(confirm('Cancelar este processo?')){
+      p.status='cancelado';
+      addHistory(p, 'Processo cancelado.');
+      saveProcesses(); showToast('Processo cancelado.'); render();
+    }
+  });
+  const reopenBtn = wrap.querySelector('#reopenBtn');
+  if(reopenBtn) reopenBtn.addEventListener('click', ()=>{
+    p.status='em_andamento';
+    p.completedAt = null;
+    addHistory(p, 'Processo reaberto.');
+    saveProcesses(); showToast('Processo reaberto.'); render();
+  });
+  wrap.querySelector('#deleteBtn').addEventListener('click', ()=>{
+    if(confirm('Excluir este processo definitivamente? Essa ação não pode ser desfeita.')){
+      state.processes = state.processes.filter(x=>x.id!==p.id);
+      saveProcesses();
+      showToast('Processo excluído.');
+      closeDrawer();
+    }
+  });
+
+  return wrap;
+}
+
+// ---------------- Configurações ----------------
+function renderSettingsContent(){
+  const wrap = document.createElement('div');
+  wrap.className = 'content';
+
+  const priceBlock = document.createElement('div');
+  priceBlock.className = 'settings-block';
+  priceBlock.innerHTML = `<h3>Tabela de valores sugeridos</h3>
+    <div class="sub">Usada como sugestão automática ao abrir um novo processo. O valor pode sempre ser ajustado em cada caso.</div>`;
+  ['abertura','alteracao','encerramento'].forEach(type=>{
+    const row = document.createElement('div');
+    row.className = 'price-row';
+    row.innerHTML = `<span class="badge badge-${type}">${TYPE_LABELS[type]}</span>
+      <input type="number" min="0" step="0.01" value="${state.settings.prices[type]}" data-price="${type}">`;
+    row.querySelector('input').addEventListener('change', e=>{
+      state.settings.prices[type] = parseFloat(e.target.value)||0;
+      saveSettings();
+      showToast('Valor sugerido atualizado.');
+    });
+    priceBlock.appendChild(row);
+  });
+  wrap.appendChild(priceBlock);
+
+  ['abertura','alteracao','encerramento'].forEach(type=>{
+    wrap.appendChild(renderStageEditor(type));
+  });
+
+  return wrap;
+}
+
+function renderStageEditor(type){
+  const block = document.createElement('div');
+  block.className = 'settings-block';
+  block.innerHTML = `<h3>Etapas — ${TYPE_LABELS_FULL[type]}</h3>
+    <div class="sub">Ajuste, reordene ou adicione etapas do fluxo. Processos já criados mantêm o progresso atual.</div>
+    <div class="stage-edit-list" data-list="${type}"></div>
+    <div class="add-stage-row">
+      <input type="text" placeholder="Nova etapa..." data-newstage="${type}">
+      <button class="icon-btn" data-addstage="${type}">+</button>
+    </div>`;
+
+  const listEl = block.querySelector(`[data-list="${type}"]`);
+  state.settings.stages[type].forEach((stage, idx)=>{
+    const row = document.createElement('div');
+    row.className = 'stage-edit-row';
+    row.innerHTML = `
+      <button class="icon-btn" data-up="${type}:${idx}" ${idx===0?'disabled':''}>↑</button>
+      <button class="icon-btn" data-down="${type}:${idx}" ${idx===state.settings.stages[type].length-1?'disabled':''}>↓</button>
+      <input type="text" value="${escapeHtml(stage)}" data-edit="${type}:${idx}">
+      <button class="icon-btn" data-del="${type}:${idx}">✕</button>
+    `;
+    listEl.appendChild(row);
+  });
+
+  block.querySelectorAll('[data-edit]').forEach(inp=>{
+    inp.addEventListener('change', e=>{
+      const [t,i] = e.target.getAttribute('data-edit').split(':');
+      state.settings.stages[t][i] = e.target.value;
+      saveSettings();
+    });
+  });
+  block.querySelectorAll('[data-up]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const [t,i] = e.currentTarget.getAttribute('data-up').split(':');
+      const idx = parseInt(i);
+      if(idx>0){
+        const arr = state.settings.stages[t];
+        [arr[idx-1],arr[idx]] = [arr[idx],arr[idx-1]];
+        saveSettings(); render();
+      }
+    });
+  });
+  block.querySelectorAll('[data-down]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const [t,i] = e.currentTarget.getAttribute('data-down').split(':');
+      const idx = parseInt(i);
+      const arr = state.settings.stages[t];
+      if(idx<arr.length-1){
+        [arr[idx+1],arr[idx]] = [arr[idx],arr[idx+1]];
+        saveSettings(); render();
+      }
+    });
+  });
+  block.querySelectorAll('[data-del]').forEach(btn=>{
+    btn.addEventListener('click', e=>{
+      const [t,i] = e.currentTarget.getAttribute('data-del').split(':');
+      const idx = parseInt(i);
+      if(state.settings.stages[t].length<=1){ showToast('Mantenha ao menos uma etapa.'); return; }
+      state.settings.stages[t].splice(idx,1);
+      state.processes.forEach(p=>{
+        if(p.type===t && p.currentStage>=state.settings.stages[t].length){
+          p.currentStage = state.settings.stages[t].length-1;
+        }
+      });
+      saveSettings(); saveProcesses(); render();
+    });
+  });
+  block.querySelector(`[data-addstage="${type}"]`).addEventListener('click', ()=>{
+    const input = block.querySelector(`[data-newstage="${type}"]`);
+    const val = input.value.trim();
+    if(!val) return;
+    state.settings.stages[type].push(val);
+    saveSettings(); render();
+  });
+
+  return block;
+}
+
+// ---------------- Agenda ----------------
+function renderAgendaContent(){
+  const wrap = document.createElement('div');
+  wrap.className = 'content';
+  const items = agendaItems();
+  if(items.length===0){
+    wrap.innerHTML = `<div class="empty-state">
+      <div class="glyph">📅</div>
+      <h3>Nenhum prazo cadastrado</h3>
+      <div>Defina prazos nos processos ou registre protocolos/exigências com data de resposta para aparecerem aqui.</div>
+    </div>`;
+    return wrap;
+  }
+  const groups = [
+    { key:'overdue', title:'Atrasados' },
+    { key:'today', title:'Vencem hoje' },
+    { key:'soon', title:'Próximos 3 dias' },
+    { key:'ok', title:'Demais prazos' }
+  ];
+  groups.forEach(g=>{
+    const groupItems = items.filter(i=> i.ds.cls===g.key);
+    if(groupItems.length===0) return;
+    const title = document.createElement('div');
+    title.className = 'agenda-section-title';
+    title.textContent = `${g.title} (${groupItems.length})`;
+    wrap.appendChild(title);
+    groupItems.forEach(item=>{
+      const row = document.createElement('div');
+      row.className = 'agenda-row';
+      const kindLabel = item.kind==='processo' ? 'Prazo do processo' : (item.kind==='exigencia' ? 'Exigência' : 'Protocolo');
+      row.innerHTML = `
+        <div class="agenda-main">
+          <div class="agenda-title">${escapeHtml(item.label)}</div>
+          <div class="agenda-sub">${kindLabel} · ${escapeHtml(item.sub)} · ${fmtDate(item.date)}</div>
+        </div>
+        <span class="deadline-badge ${item.ds.cls}">${item.ds.label}</span>
+      `;
+      row.addEventListener('click', ()=> openDetail(item.processId));
+      wrap.appendChild(row);
+    });
+  });
+  return wrap;
+}
+
+// ---------------- Tarefas ----------------
+function openTasksCount(){
+  return state.tasks.filter(t=>{
+    if(t.status==='concluida') return false;
+    const ds = deadlineStatus(t.dueDate);
+    return ds && (ds.cls==='overdue' || ds.cls==='today');
+  }).length;
+}
+function filteredTasks(){
+  return state.tasks.filter(t=>{
+    if(state.search){
+      const s = state.search.toLowerCase();
+      if(!(t.title.toLowerCase().includes(s) || (t.responsible||'').toLowerCase().includes(s))) return false;
+    }
+    if(state.taskFilter==='todas') return true;
+    const ds = deadlineStatus(t.dueDate);
+    if(!ds) return false;
+    if(state.taskFilter==='hoje') return ds.cls==='today';
+    if(state.taskFilter==='atrasadas') return ds.cls==='overdue';
+    if(state.taskFilter==='proximas') return ds.cls==='soon' || ds.cls==='ok';
+    return true;
+  }).sort((a,b)=>{
+    if((a.status==='concluida') !== (b.status==='concluida')) return a.status==='concluida' ? 1 : -1;
+    return new Date(a.dueDate||'2999-12-31') - new Date(b.dueDate||'2999-12-31');
+  });
+}
+function renderTasksContent(){
+  const wrap = document.createElement('div');
+  wrap.className = 'content';
+  wrap.id = 'tasksContent';
+  wrap.appendChild(renderTaskFilterChips());
+  wrap.appendChild(renderTasksBoard());
+  return wrap;
+}
+function renderTasksListOnly(){
+  const wrap = document.getElementById('tasksContent');
+  if(!wrap) return;
+  wrap.innerHTML = '';
+  wrap.appendChild(renderTaskFilterChips());
+  wrap.appendChild(renderTasksBoard());
+}
+function renderTaskFilterChips(){
+  const el = document.createElement('div');
+  el.className = 'status-toggle';
+  const opts = [['todas','Todas'],['hoje','Hoje'],['atrasadas','Atrasadas'],['proximas','Próximas']];
+  opts.forEach(([key,label])=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (state.taskFilter===key ? ' active':'');
+    chip.textContent = label;
+    chip.addEventListener('click', ()=>{ state.taskFilter = key; renderTasksListOnly(); });
+    el.appendChild(chip);
+  });
+  return el;
+}
+function renderTasksBoard(){
+  const list = filteredTasks();
+  const board = document.createElement('div');
+  if(list.length===0){
+    board.innerHTML = `<div class="empty-state"><div class="glyph">✅</div><h3>Nenhuma tarefa por aqui</h3><div>Crie uma nova tarefa para a equipe começar a acompanhar.</div></div>`;
+    return board;
+  }
+  list.forEach(t=> board.appendChild(renderTaskRow(t)));
+  return board;
+}
+function renderTaskRow(t){
+  const row = document.createElement('div');
+  const done = t.status==='concluida';
+  row.className = 'task-row' + (done ? ' done' : '');
+  const proc = t.processId ? state.processes.find(p=>p.id===t.processId) : null;
+  const ds = !done ? deadlineStatus(t.dueDate) : null;
+  row.innerHTML = `
+    <div class="task-check ${done?'checked':''}">${done ? '✓' : ''}</div>
+    <div class="task-main">
+      <div class="task-title">${escapeHtml(t.title)}</div>
+      <div class="task-sub">${t.responsible ? escapeHtml(t.responsible) : 'Sem responsável'}${proc ? ' · '+escapeHtml(proc.client) : ''}${t.dueDate ? ' · '+fmtDate(t.dueDate) : ''}</div>
+    </div>
+    ${ds ? `<span class="deadline-badge ${ds.cls}">${ds.label}</span>` : ''}
+  `;
+  row.querySelector('.task-check').addEventListener('click', e=>{
+    e.stopPropagation();
+    t.status = done ? 'a_fazer' : 'concluida';
+    saveTasks();
+    renderTasksListOnly();
+    renderSidebarInPlace();
+  });
+  row.addEventListener('click', ()=> openTaskDetail(t.id));
+  return row;
+}
+function renderSidebarInPlace(){
+  const oldSidebar = document.querySelector('.sidebar');
+  if(oldSidebar) oldSidebar.replaceWith(renderSidebar());
+}
+
+function processOptionsHtml(selectedId){
+  const open = state.processes.filter(p=>p.status==='em_andamento');
+  return '<option value="">Nenhum processo vinculado</option>' +
+    open.map(p=>`<option value="${p.id}" ${p.id===selectedId?'selected':''}>${escapeHtml(p.client)} — ${TYPE_LABELS[p.type]}</option>`).join('');
+}
+
+function renderNewTaskForm(){
+  const wrap = document.createElement('div');
+  wrap.innerHTML = `
+    <div class="drawer-head">
+      <div class="drawer-title">Nova tarefa</div>
+      <button class="drawer-close" id="closeDrawerBtn">✕</button>
+    </div>
+    <div class="field">
+      <label>Título da tarefa</label>
+      <input type="text" id="t_title" placeholder="Ex: Consultar protocolo na Junta Comercial">
+    </div>
+    <div class="field">
+      <label>Processo vinculado (opcional)</label>
+      <select id="t_process">${processOptionsHtml(null)}</select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Responsável</label>
+        <input type="text" id="t_responsible" placeholder="Nome do responsável">
+      </div>
+      <div class="field">
+        <label>Prazo</label>
+        <input type="date" id="t_due">
+      </div>
+    </div>
+    <div class="drawer-actions">
+      <button class="btn btn-primary" id="createTaskBtn">Criar tarefa</button>
+      <button class="btn btn-ghost" id="cancelTaskBtn">Cancelar</button>
+    </div>
+  `;
+  wrap.querySelector('#closeDrawerBtn').addEventListener('click', closeDrawer);
+  wrap.querySelector('#cancelTaskBtn').addEventListener('click', closeDrawer);
+  wrap.querySelector('#createTaskBtn').addEventListener('click', ()=>{
+    const title = wrap.querySelector('#t_title').value.trim();
+    if(!title){ showToast('Informe o título da tarefa.'); return; }
+    const t = {
+      id: uid(),
+      title,
+      processId: wrap.querySelector('#t_process').value || null,
+      responsible: wrap.querySelector('#t_responsible').value.trim(),
+      dueDate: wrap.querySelector('#t_due').value || null,
+      status: 'a_fazer',
+      createdAt: new Date().toISOString()
+    };
+    state.tasks.push(t);
+    saveTasks();
+    showToast('Tarefa criada.');
+    closeDrawer();
+  });
+  return wrap;
+}
+
+function renderTaskDetailForm(t){
+  const wrap = document.createElement('div');
+  const done = t.status==='concluida';
+  wrap.innerHTML = `
+    <div class="drawer-head">
+      <div class="drawer-title">${escapeHtml(t.title)}</div>
+      <button class="drawer-close" id="closeDrawerBtn">✕</button>
+    </div>
+    <div class="status-pill ${done?'concluido':'em_andamento'}">${done ? 'Concluída' : 'A fazer'}</div>
+    <div class="field">
+      <label>Título da tarefa</label>
+      <input type="text" id="t_title" value="${escapeHtml(t.title)}">
+    </div>
+    <div class="field">
+      <label>Processo vinculado (opcional)</label>
+      <select id="t_process">${processOptionsHtml(t.processId)}</select>
+    </div>
+    <div class="row2">
+      <div class="field">
+        <label>Responsável</label>
+        <input type="text" id="t_responsible" value="${escapeHtml(t.responsible||'')}">
+      </div>
+      <div class="field">
+        <label>Prazo</label>
+        <input type="date" id="t_due" value="${t.dueDate||''}">
+      </div>
+    </div>
+    <div class="drawer-actions">
+      <button class="btn btn-primary" id="saveTaskBtn">Salvar alterações</button>
+      <button class="btn btn-ghost" id="toggleTaskBtn">${done ? 'Reabrir tarefa' : 'Marcar concluída'}</button>
+      <button class="btn btn-danger" id="deleteTaskBtn">Excluir</button>
+    </div>
+  `;
+  wrap.querySelector('#closeDrawerBtn').addEventListener('click', closeDrawer);
+  wrap.querySelector('#saveTaskBtn').addEventListener('click', ()=>{
+    t.title = wrap.querySelector('#t_title').value.trim() || t.title;
+    t.processId = wrap.querySelector('#t_process').value || null;
+    t.responsible = wrap.querySelector('#t_responsible').value.trim();
+    t.dueDate = wrap.querySelector('#t_due').value || null;
+    saveTasks();
+    showToast('Alterações salvas.');
+    render();
+  });
+  wrap.querySelector('#toggleTaskBtn').addEventListener('click', ()=>{
+    t.status = done ? 'a_fazer' : 'concluida';
+    saveTasks();
+    render();
+  });
+  wrap.querySelector('#deleteTaskBtn').addEventListener('click', ()=>{
+    if(confirm('Excluir esta tarefa definitivamente?')){
+      state.tasks = state.tasks.filter(x=>x.id!==t.id);
+      saveTasks();
+      showToast('Tarefa excluída.');
+      closeDrawer();
+    }
+  });
+  return wrap;
+}
+
+// ---------------- Kanban ----------------
+function renderKanbanContent(){
+  const wrap = document.createElement('div');
+  wrap.className = 'content';
+
+  const tabs = document.createElement('div');
+  tabs.className = 'kanban-tabs';
+  ['abertura','alteracao','encerramento'].forEach(type=>{
+    const chip = document.createElement('div');
+    chip.className = 'chip' + (state.kanbanType===type ? ' active' : '');
+    chip.textContent = TYPE_LABELS_FULL[type];
+    chip.addEventListener('click', ()=>{ state.kanbanType = type; render(); });
+    tabs.appendChild(chip);
+  });
+  wrap.appendChild(tabs);
+
+  const boardWrap = document.createElement('div');
+  boardWrap.id = 'kanbanBoard';
+  boardWrap.appendChild(buildKanbanBoard());
+  wrap.appendChild(boardWrap);
+
+  return wrap;
+}
+
+function buildKanbanBoard(){
+  const type = state.kanbanType;
+  const stages = state.settings.stages[type];
+  const board = document.createElement('div');
+  board.className = 'kanban-board';
+
+  const procsByStage = stages.map(()=>[]);
+  state.processes.forEach(p=>{
+    if(p.type===type && p.status==='em_andamento'){
+      procsByStage[p.currentStage] = procsByStage[p.currentStage] || [];
+      procsByStage[p.currentStage].push(p);
+    }
+  });
+  const concluded = state.processes.filter(p=>p.type===type && p.status==='concluido')
+    .sort((a,b)=> new Date(b.completedAt) - new Date(a.completedAt)).slice(0,15);
+
+  stages.forEach((stageName, idx)=>{
+    const col = document.createElement('div');
+    col.className = 'kanban-col';
+    col.innerHTML = `<div class="kanban-col-title"><span>${escapeHtml(stageName)}</span><span>${(procsByStage[idx]||[]).length}</span></div>`;
+    (procsByStage[idx]||[]).forEach(p=> col.appendChild(kanbanCard(p)));
+    wireKanbanColumn(col, type, idx, false);
+    board.appendChild(col);
+  });
+
+  const doneCol = document.createElement('div');
+  doneCol.className = 'kanban-col';
+  doneCol.innerHTML = `<div class="kanban-col-title"><span>Concluído</span><span>${concluded.length}</span></div>`;
+  concluded.forEach(p=> doneCol.appendChild(kanbanCard(p)));
+  wireKanbanColumn(doneCol, type, stages.length, true);
+  board.appendChild(doneCol);
+
+  return board;
+}
+
+function kanbanCard(p){
+  const card = document.createElement('div');
+  card.className = 'kanban-card';
+  card.draggable = true;
+  card.setAttribute('data-procid', p.id);
+  card.innerHTML = `
+    <div class="kc-client">${escapeHtml(p.client)}</div>
+    <div class="kc-sub">${p.responsible ? escapeHtml(p.responsible) : 'Sem responsável'}${p.nextAction ? ' · '+escapeHtml(p.nextAction) : ''}</div>
+  `;
+  card.addEventListener('dragstart', e=>{
+    e.dataTransfer.setData('text/plain', p.id);
+  });
+  card.addEventListener('click', ()=> openDetail(p.id));
+  return card;
+}
+
+function wireKanbanColumn(col, type, stageIndex, isDoneColumn){
+  col.addEventListener('dragover', e=>{ e.preventDefault(); col.classList.add('dragover'); });
+  col.addEventListener('dragleave', ()=> col.classList.remove('dragover'));
+  col.addEventListener('drop', e=>{
+    e.preventDefault();
+    col.classList.remove('dragover');
+    const procId = e.dataTransfer.getData('text/plain');
+    const p = state.processes.find(x=>x.id===procId);
+    if(!p || p.type!==type) return;
+    if(isDoneColumn){
+      if(p.status!=='concluido'){
+        p.status = 'concluido';
+        p.completedAt = new Date().toISOString();
+        p.currentStage = state.settings.stages[type].length - 1;
+        addHistory(p, 'Processo concluído (via Kanban).');
+        saveProcesses();
+        showToast('Processo concluído.');
+        render();
+      }
+    } else {
+      if(p.status==='concluido'){
+        p.status = 'em_andamento';
+        p.completedAt = null;
+      }
+      if(p.currentStage !== stageIndex){
+        p.currentStage = stageIndex;
+        addHistory(p, `Etapa movida para "${state.settings.stages[type][stageIndex]}" (via Kanban).`);
+        saveProcesses();
+        showToast('Etapa atualizada.');
+        render();
+      }
+    }
+  });
+}
+
+// ---------------- Autenticação ----------------
+let currentUserEmail = '';
+let appStarted = false;
+let pollingStarted = false;
+
+function renderLoginScreen(prefillError){
+  root.innerHTML = '';
+  const screen = document.createElement('div');
+  screen.className = 'login-screen';
+  screen.innerHTML = `
+    <div class="login-card">
+      <div class="brand-logo-card"><img src="${LOGO_DATA_URI}" alt="LAM Consultoria Contábil Empresarial" style="width:100%;"></div>
+      <h2>Entrar no LAM Societário</h2>
+      <div class="sub">Use o e-mail e a senha cadastrados para sua equipe.</div>
+      <div class="login-error" id="loginError"></div>
+      <div class="field">
+        <label>E-mail</label>
+        <input type="email" id="login_email" placeholder="seuusuario@lamcontabil.com.br" autocomplete="username">
+      </div>
+      <div class="field">
+        <label>Senha</label>
+        <input type="password" id="login_password" placeholder="••••••••" autocomplete="current-password">
+      </div>
+      <button class="btn btn-primary" id="loginBtn" style="width:100%;justify-content:center;margin-top:4px;">Entrar</button>
+      <button class="login-link" id="forgotBtn">Esqueci minha senha</button>
+    </div>
+  `;
+  root.appendChild(screen);
+
+  const errorEl = screen.querySelector('#loginError');
+  const showError = (msg)=>{ errorEl.textContent = msg; errorEl.classList.add('show'); };
+  if(prefillError) showError(prefillError);
+
+  async function doLogin(){
+    const email = screen.querySelector('#login_email').value.trim();
+    const password = screen.querySelector('#login_password').value;
+    if(!email || !password){ showError('Preencha e-mail e senha.'); return; }
+    const btn = screen.querySelector('#loginBtn');
+    btn.disabled = true; btn.textContent = 'Entrando...';
+    const { error } = await sb.auth.signInWithPassword({ email, password });
+    btn.disabled = false; btn.textContent = 'Entrar';
+    if(error){ showError('E-mail ou senha incorretos.'); return; }
+    // onAuthStateChange cuida de abrir o sistema
+  }
+  screen.querySelector('#loginBtn').addEventListener('click', doLogin);
+  screen.querySelector('#login_password').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+  screen.querySelector('#login_email').addEventListener('keydown', e=>{ if(e.key==='Enter') screen.querySelector('#login_password').focus(); });
+
+  screen.querySelector('#forgotBtn').addEventListener('click', async ()=>{
+    const email = screen.querySelector('#login_email').value.trim();
+    if(!email){ showError('Digite seu e-mail acima e clique em "Esqueci minha senha" de novo.'); return; }
+    const { error } = await sb.auth.resetPasswordForEmail(email);
+    if(error){ showError('Não foi possível enviar o e-mail agora. Tente novamente em alguns minutos.'); return; }
+    errorEl.classList.remove('show');
+    alert('Se este e-mail estiver cadastrado, você vai receber um link para criar uma nova senha.');
+  });
+}
+
+async function startApp(user){
+  currentUserEmail = (user && user.email) || '';
+  currentUserId = (user && user.id) || '';
+  const ok = await loadState();
+  if(!ok) return;
+  if(NEEDS_PASSWORD_SETUP){
+    NEEDS_PASSWORD_SETUP = false;
+    state.passwordSetup = true;
+    openChangePassword();
+  }
+  if(!pollingStarted){
+    pollingStarted = true;
+    setInterval(refreshFromServer, 30000);
+    document.addEventListener('visibilitychange', ()=>{ if(!document.hidden) refreshFromServer(); });
+  }
+}
+
+function signOut(){
+  if(sb) sb.auth.signOut();
+}
+
+function openChangePassword(){
+  state.drawerMode = 'changePassword';
+  render();
+}
+
+function renderChangePasswordForm(){
+  const wrap = document.createElement('div');
+  const setup = !!state.passwordSetup;
+  wrap.innerHTML = `
+    <div class="drawer-head">
+      <div class="drawer-title">${setup ? 'Defina sua senha' : 'Trocar senha'}</div>
+      <button class="drawer-close" id="closeDrawerBtn">✕</button>
+    </div>
+    ${setup ? `<div class="hint" style="margin-bottom:14px;">Bem-vindo(a)! Crie agora a senha que você vai usar para entrar no sistema.</div>` : ''}
+    <div class="field">
+      <label>${setup ? 'Senha' : 'Nova senha'}</label>
+      <input type="password" id="cp_new" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+    </div>
+    <div class="field">
+      <label>Confirmar senha</label>
+      <input type="password" id="cp_confirm" placeholder="Repita a senha" autocomplete="new-password">
+    </div>
+    <div class="drawer-actions">
+      <button class="btn btn-primary" id="changePasswordBtn">Salvar senha</button>
+      <button class="btn btn-ghost" id="cancelChangePasswordBtn">${setup ? 'Fazer isso depois' : 'Cancelar'}</button>
+    </div>
+  `;
+  const leave = ()=>{ state.passwordSetup = false; closeDrawer(); };
+  wrap.querySelector('#closeDrawerBtn').addEventListener('click', leave);
+  wrap.querySelector('#cancelChangePasswordBtn').addEventListener('click', leave);
+  wrap.querySelector('#changePasswordBtn').addEventListener('click', async ()=>{
+    const pass = wrap.querySelector('#cp_new').value;
+    const again = wrap.querySelector('#cp_confirm').value;
+    if(pass.length < 6){ showToast('A senha precisa ter pelo menos 6 caracteres.'); return; }
+    if(pass !== again){ showToast('As senhas não coincidem.'); return; }
+    const { error } = await sb.auth.updateUser({ password: pass });
+    if(error){
+      const m = String(error.message || '').toLowerCase();
+      if(m.indexOf('different') >= 0) showToast('A nova senha precisa ser diferente da atual.');
+      else if(m.indexOf('weak') >= 0 || m.indexOf('characters') >= 0) showToast('Senha fraca demais. Use mais caracteres.');
+      else showToast('Não foi possível salvar a senha. Tente novamente.');
+      return;
+    }
+    showToast('Senha salva com sucesso.');
+    leave();
+  });
+  return wrap;
+}
+
+if(sb){
+  sb.auth.onAuthStateChange((event, session)=>{
+    if(session){
+      if(!appStarted){ appStarted = true; setTimeout(()=> startApp(session.user), 0); }
+    } else if(event === 'SIGNED_OUT'){
+      appStarted = false;
+      setTimeout(()=> renderLoginScreen(), 0);
+    }
+  });
+  sb.auth.getSession().then(({ data })=>{
+    if(data.session){
+      if(!appStarted){ appStarted = true; startApp(data.session.user); }
+    } else if(!appStarted){
+      renderLoginScreen(LOGIN_NOTICE);
+    }
+  });
+} else {
+  // Supabase ainda não configurado: roda em modo local (sem login).
+  loadState();
+}
+</script>
+</body>
+</html>
